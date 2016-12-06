@@ -259,9 +259,13 @@ class AskStatusTask(Task):
         team_data = bot.plugin_config[self.team]
 
         if not bot.is_online(self.user_id):
+            logging.info(
+                'User {} is not online, skipping'.format(self.user_id))
             return
 
         if bot.get_user_lock(self.user_id):
+            logging.info(
+                'User {} is already locked, skipping'.format(self.user_id))
             return
 
         # lock this user conversation, worst case till the end of day
@@ -271,6 +275,8 @@ class AskStatusTask(Task):
         ).total_seconds()
         bot.lock_user(self.user_id, self.team, expire_in)
 
+        logging.info('Asked user {} their status for team {}'.format(
+            self.user_id, self.team))
         bot.fast_queue.append(
             SendMessageTask(
                 to=self.user_id,
@@ -312,6 +318,8 @@ class ReadMessageTask(Task):
         user_report['reported_at'] = datetime.utcnow()
         is_first_line = len(user_report['report']) == 0
         user_report['report'].append(self.data['text'])
+
+        logging.info('User {} says "{}"'.format(user_id, self.data['text']))
 
         # give user extra 10 seconds to add more lines
         bot.lock_user(user_id, team, expire_in=10)
@@ -364,8 +372,7 @@ class Storage(object):
 
     def save(self):
         with open(self._file_name, 'wb') as f:
-            logging.info('Saved state to disk')
-            pickle.dump(self._data, f, pickle.HIGHEST_PROTOCOL)
+            pickle.dump(self._data, f)
 
     def load(self):
         if not os.path.exists(self._file_name):
@@ -373,7 +380,7 @@ class Storage(object):
 
         with open(self._file_name, 'rb') as f:
             logging.info('Loaded db from disk')
-            return pickle.load(f, encoding='utf-8')
+            return pickle.load(f)
 
 
 class StandupPonyPlugin(Plugin):
