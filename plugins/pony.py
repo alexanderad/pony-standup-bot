@@ -234,22 +234,33 @@ class AskStatusTask(Task):
         'Psst. I know, you hate it. But I have to ask. Any blockers on {}?',
 
         "Hi. Ponies don't have to report. People on {} made us "
-        "to ask other people to. How are you doing today?",
+        "to ask other people to. How are you doing today? Give me few words "
+        "to share with the team.",
 
         "Amazing day, dear. I'm gathering status update for {}. How it "
         "is going?",
+
+        "Dear, I'm here to ask you about your status for the team {}. Could "
+        "you be so kind to share few words on what you are working now?",
 
         "Hello, it's me again. How are you doing today? {} will be excited "
         "to hear. I needs few words from you.",
 
         "Heya. Just asked all our {} members. You are the last one. How's "
-        "your day?",
+        "your day? Anything you want to share with the team?",
+
+        "Hi there! Amazing day. Oh, wait, is that word banned on your team? "
+        "Nevermind. I'm here to ask you about your daily status update for "
+        "{}. Would you mind sharing few words?",
+
+        "Good morning, Dear. Just noticed you are online, decided to ask you "
+        "your current status for the {}. Few words to share?",
 
         "Dear, sorry for disturbing you. Would you mind sharing your status "
         "with {}? Few words.",
 
         "Good morning. Your beloved pony is here again to ask your daily "
-        "status. How are you doing today?"
+        "status for {}. How are you doing today?",
     )
 
     def __init__(self, team, user_id):
