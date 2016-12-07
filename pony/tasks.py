@@ -1,88 +1,11 @@
 # coding=utf-8
-import os
-import threading
-import pickle
-import pprint
 import random
 import logging
-import collections
 import dateutil.tz
 import dateutil.parser
-
 from datetime import datetime, timedelta
 
-from rtmbot.core import Plugin, Job
-
-
-class PHRASES(object):
-    """Collection of phrases."""
-    PLEASE_REPORT = (
-        'Hey, just wanted to ask your current status for {}, how it is going?',
-        'Psst. I know, you hate it. But I have to ask. Any blockers?',
-
-        "Hi. Ponies don't have to report. People on {} made us "
-        "to ask other people to. How are you doing today? Give me few words "
-        "to share with the team.",
-
-        "Amazing day, dear. I'm gathering status update for {}. How it "
-        "is going?",
-
-        "Dear, I'm here to ask you about your status for the team {}. Could "
-        "you be so kind to share few words on what you are working now?",
-
-        "Hello, it's me again. How are you doing today? {} will be excited "
-        "to hear. I needs few words from you.",
-
-        "Heya. Just asked all our {} members. You are the last one. How's "
-        "your day? Anything you want to share with the team?",
-
-        "Hi there! Amazing day. Oh, wait, is that word banned on your team? "
-        "Nevermind. I'm here to ask you about your daily status update for "
-        "{}. Would you mind sharing few words?",
-
-        "Good morning, Dear. Just noticed you are online, decided to ask you "
-        "your current status for the {}. Few words to share?",
-
-        "Dear, sorry for disturbing you. Would you mind sharing your status "
-        "with {}? Few words.",
-
-        "Good morning. Your beloved pony is here again to ask your daily "
-        "status for {}. How are you doing today?",
-    )
-    THANKS = (
-        'Thanks! :+1:',
-        'Thank you so much. Really appreciate it :+1:',
-        "Thanks a lot. I'm happy about that.",
-        'Thank you, dear.',
-        'Thank you, I will report to your boss. I mean BOSS.',
-        'Many thanks. You :guitar:',
-        'You are so kind. Thanks :+1:',
-        'Okay, will report that. Thanks.',
-        'You are so hardworking today. Thanks.',
-        'Love that. Thanks :+1:',
-        "I see. That's intense! Thanks.",
-        'Ah, okay. Thanks a lot.',
-        'Sounds good. Thank you.',
-        "That's a lot. I do not envy you. Thanks, anyway! :+1:"
-    )
-
-
-
-class WorldTick(Job):
-    """World tick."""
-    def __init__(self, bot, queue, interval):
-        super(WorldTick, self).__init__(interval)
-        self.bot = bot
-        self.queue = queue
-
-    def run(self, slack):
-        visible_tasks = len(self.queue)
-
-        for x in range(visible_tasks):
-            task = self.queue.popleft()
-            task.execute(bot=self.bot, slack=slack)
-
-        return []
+from .dictionary import Dictionary
 
 
 class Task(object):
@@ -90,7 +13,7 @@ class Task(object):
         pass
 
 
-class SendMessageTask(Task):
+class SendMessage(Task):
     def __init__(self, to, text, attachments=None):
         self.to = to
         self.text = text
@@ -128,7 +51,7 @@ class UpdateIMList(Task):
         bot.storage.set('ims', ims)
 
 
-class ReportStatusTask(Task):
+class SendReportSummary(Task):
     def __init__(self, team):
         self.team = team
 
@@ -191,7 +114,7 @@ class ReportStatusTask(Task):
         if reports:
             channel = team_config['post_summary_to']
             bot.fast_queue.append(
-                SendMessageTask(
+                SendMessage(
                     to=channel,
                     text='Standup Summary for Today',
                     attachments=reports
@@ -202,10 +125,10 @@ class ReportStatusTask(Task):
 
             logging.info('Reported status for team {}'.format(self.team))
 
-        bot.fast_queue.append(UnlockUsersTask(team=self.team))
+        bot.fast_queue.append(UnlockUsers(team=self.team))
 
 
-class UnlockUsersTask(Task):
+class UnlockUsers(Task):
     def __init__(self, team):
         self.team = team
 
@@ -223,7 +146,7 @@ class UnlockUsersTask(Task):
                 bot.unlock_user(user_id)
 
 
-class CheckReportsTask(Task):
+class CheckReports(Task):
     def _is_reportable(self, today):
         is_weekend = today.isoweekday() in (6, 7)
         return not is_weekend
@@ -236,7 +159,7 @@ class CheckReportsTask(Task):
 
     def execute(self, bot, slack):
         # schedule next check
-        bot.slow_queue.append(CheckReportsTask())
+        bot.slow_queue.append(CheckReports())
 
         today = datetime.utcnow().date()
 
@@ -260,7 +183,7 @@ class CheckReportsTask(Task):
                 return
 
             if self._time_to_report(bot, team_config['report_by']):
-                bot.fast_queue.append(ReportStatusTask(team))
+                bot.fast_queue.append(SendReportSummary(team))
                 return
 
             for user in team_config['users']:
@@ -279,11 +202,11 @@ class CheckReportsTask(Task):
                 team_report[user_id]['seen_online'] = bot.is_online(user_id)
 
                 bot.fast_queue.append(
-                    AskStatusTask(team=team, user_id=user_id)
+                    AskStatus(team=team, user_id=user_id)
                 )
 
 
-class AskStatusTask(Task):
+class AskStatus(Task):
     def __init__(self, team, user_id):
         self.team = team
         self.user_id = user_id
@@ -313,16 +236,16 @@ class AskStatusTask(Task):
         logging.info('Asked user {} their status for team {}'.format(
             self.user_id, self.team))
         bot.fast_queue.append(
-            SendMessageTask(
+            SendMessage(
                 to=self.user_id,
                 text=random.choice(
-                    PHRASES.PLEASE_REPORT
+                    Dictionary.PLEASE_REPORT
                 ).format(team_data['name'])
             )
         )
 
 
-class ReadMessageTask(Task):
+class ReadMessage(Task):
     def __init__(self, data):
         self.data = data
 
@@ -362,167 +285,18 @@ class ReadMessageTask(Task):
         bot.lock_user(user_id, team, expire_in=90)
         if is_first_line:
             bot.fast_queue.append(
-                SendMessageTask(
+                SendMessage(
                     to=user_id,
-                    text=random.choice(PHRASES.THANKS)
+                    text=random.choice(Dictionary.THANKS)
                 )
             )
         else:
             bot.fast_queue.append(
-                SendMessageTask(to=user_id, text="Ok, I'll add that too.")
+                SendMessage(to=user_id, text="Ok, I'll add that too.")
             )
 
 
-class FlushDBTask(Task):
+class SyncDB(Task):
     def execute(self, bot, slack):
         bot.storage.save()
-        bot.slow_queue.append(FlushDBTask())
-
-
-class Storage(object):
-    """Simple key value storage."""
-    def __init__(self, file_name=None):
-        self._file_name = file_name
-        self._data = self.load()
-        self._ts = dict()
-        self._lock = threading.Lock()
-
-    def set(self, key, value, expire_in=None):
-        with self._lock:
-            self._data[key] = value
-            if expire_in is not None:
-                self._ts[key] = datetime.utcnow() + timedelta(seconds=expire_in)
-
-    def unset(self, key):
-        with self._lock:
-            del self._data[key]
-            if key in self._ts:
-                del self._ts[key]
-
-    def get(self, key, default=None):
-        with self._lock:
-            if key in self._ts and datetime.utcnow() > self._ts[key]:
-                del self._data[key]
-                del self._ts[key]
-
-            if key not in self._data and default is not None:
-               self._data[key] = default
-
-            return self._data.get(key)
-
-    def save(self):
-        with open(self._file_name, 'wb') as f:
-            pickle.dump(self._data, f)
-
-        pretty_data = pprint.pformat({
-            key: value for key, value in self._data.items()
-            if key not in ['ims', 'users']
-        }, indent=4)
-        logging.debug(pretty_data)
-        logging.info('Flushed db to disk')
-
-    def load(self):
-        if not os.path.exists(self._file_name):
-            return dict()
-
-        with open(self._file_name, 'rb') as f:
-            logging.info('Loaded db from disk')
-            return pickle.load(f)
-
-
-class StandupPonyPlugin(Plugin):
-    """Standup Pony plugin."""
-    def __init__(self, name=None, slack_client=None, plugin_config=None):
-        super(StandupPonyPlugin, self).__init__(
-            name, slack_client, plugin_config)
-        self.slow_queue = collections.deque()
-        self.fast_queue = collections.deque()
-
-        self.storage = Storage(plugin_config.get('db_file'))
-
-        # world updates
-        self.slow_queue.append(UpdateUserList())
-        self.slow_queue.append(UpdateIMList())
-        self.slow_queue.append(CheckReportsTask())
-        self.slow_queue.append(FlushDBTask())
-
-    def get_channel(self, channel_id):
-        channels = self.storage.get('channels', dict())
-
-        if channel_id not in channels:
-            channels[channel_id] = self.slack_client.api_call()
-            self.storage.set('channels', channels)
-
-        return channels[channel_id]
-
-    def get_user_by_id(self, user_id):
-        users = self.storage.get('users')
-        for user in users:
-            if user['id'] == user_id:
-                return user
-
-    def get_user_by_name(self, user_name):
-        user_name = user_name.strip('@')
-        users = self.storage.get('users')
-        for user in users:
-            if user['name'] == user_name:
-                return user
-
-    def is_online(self, user_id):
-        data = self.slack_client.api_call('users.getPresence', user=user_id)
-        if data['ok']:
-            return data['presence'] == 'active'
-
-        return False
-
-    def lock_user(self, user_id, team, expire_in):
-        lock_key = '{}_lock'.format(user_id)
-        self.storage.set(lock_key, team, expire_in=expire_in)
-        logging.info('Locked user {} for {} sec'.format(user_id, expire_in))
-
-    def unlock_user(self, user_id):
-        lock_key = '{}_lock'.format(user_id)
-        self.storage.unset(lock_key)
-        logging.info('Unlocked user {}'.format(user_id))
-
-    def get_user_lock(self, user_id):
-        lock_key = '{}_lock'.format(user_id)
-        return self.storage.get(lock_key)
-
-    def process_message(self, data):
-        self.fast_queue.append(ReadMessageTask(data=data))
-
-    def process_im_created(self, data):
-        logging.info('IM created for user {}'.format(data.get('user')))
-        self.fast_queue.append(UpdateIMList())
-
-    def process_user_typing(self, data):
-        logging.info('User {} is typing to channel {}'.format(
-            data.get('user'), data.get('channel')
-        ))
-
-    def process_presence_change(self, data):
-        logging.info('User {} is now {}'.format(
-            data.get('user'), data.get('presence')
-        ))
-
-    def register_jobs(self):
-        # slow queue
-        self.jobs.append(
-            WorldTick(
-                bot=self,
-                queue=self.slow_queue,
-                interval=60
-            )
-        )
-        logging.debug('Registered slow queue')
-
-        # fast queue
-        self.jobs.append(
-            WorldTick(
-                bot=self,
-                queue=self.fast_queue,
-                interval=0.75
-            )
-        )
-        logging.debug('Registered fast queue')
+        bot.slow_queue.append(SyncDB())
