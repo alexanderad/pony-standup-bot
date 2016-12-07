@@ -378,7 +378,10 @@ class Storage(object):
 
         logging.debug('Saved db to disk')
 
-        pretty_data = pprint.pformat(self._data, indent=4)
+        pretty_data = pprint.pformat({
+            key: value for key, value in self._data.items()
+            if key not in ['ims', 'users']
+        }, indent=4)
         logging.debug(pretty_data)
 
     def load(self):
