@@ -1,6 +1,7 @@
 import os
 import threading
 import pickle
+import pprint
 import random
 import logging
 import collections
@@ -335,6 +336,7 @@ class ReadMessageTask(Task):
 
 class FlushDBTask(Task):
     def execute(self, bot, slack):
+        logging.debug('Saving data')
         bot.storage.save()
         bot.slow_queue.append(FlushDBTask())
 
@@ -373,6 +375,11 @@ class Storage(object):
     def save(self):
         with open(self._file_name, 'wb') as f:
             pickle.dump(self._data, f)
+
+        logging.debug('Saved db to disk')
+
+        pretty_data = pprint.pformat(self._data, indent=4)
+        logging.debug(pretty_data)
 
     def load(self):
         if not os.path.exists(self._file_name):
@@ -457,6 +464,7 @@ class StandupPonyPlugin(Plugin):
                 interval=60
             )
         )
+        logging.debug('Registered slow queue')
 
         # fast queue
         self.jobs.append(
@@ -466,3 +474,4 @@ class StandupPonyPlugin(Plugin):
                 interval=0.75
             )
         )
+        logging.debug('Registered fast queue')

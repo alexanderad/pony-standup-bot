@@ -1,2 +1,3 @@
 rtmbot
+daemon
 python-dateutil
