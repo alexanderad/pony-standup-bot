@@ -322,8 +322,8 @@ class ReadMessageTask(Task):
 
         logging.info('User {} says "{}"'.format(user_id, self.data['text']))
 
-        # give user extra 10 seconds to add more lines
-        bot.lock_user(user_id, team, expire_in=10)
+        # give user extra seconds to add more lines
+        bot.lock_user(user_id, team, expire_in=90)
         if is_first_line:
             bot.fast_queue.append(
                 SendMessageTask(to=user_id, text='Thanks! :+1:')
