@@ -1,3 +1,4 @@
+# coding=utf-8
 import os
 import threading
 import pickle
@@ -11,6 +12,60 @@ import dateutil.parser
 from datetime import datetime, timedelta
 
 from rtmbot.core import Plugin, Job
+
+
+class PHRASES(object):
+    """Collection of phrases."""
+    PLEASE_REPORT = (
+        'Hey, just wanted to ask your current status for {}, how it is going?',
+        'Psst. I know, you hate it. But I have to ask. Any blockers?',
+
+        "Hi. Ponies don't have to report. People on {} made us "
+        "to ask other people to. How are you doing today? Give me few words "
+        "to share with the team.",
+
+        "Amazing day, dear. I'm gathering status update for {}. How it "
+        "is going?",
+
+        "Dear, I'm here to ask you about your status for the team {}. Could "
+        "you be so kind to share few words on what you are working now?",
+
+        "Hello, it's me again. How are you doing today? {} will be excited "
+        "to hear. I needs few words from you.",
+
+        "Heya. Just asked all our {} members. You are the last one. How's "
+        "your day? Anything you want to share with the team?",
+
+        "Hi there! Amazing day. Oh, wait, is that word banned on your team? "
+        "Nevermind. I'm here to ask you about your daily status update for "
+        "{}. Would you mind sharing few words?",
+
+        "Good morning, Dear. Just noticed you are online, decided to ask you "
+        "your current status for the {}. Few words to share?",
+
+        "Dear, sorry for disturbing you. Would you mind sharing your status "
+        "with {}? Few words.",
+
+        "Good morning. Your beloved pony is here again to ask your daily "
+        "status for {}. How are you doing today?",
+    )
+    THANKS = (
+        'Thanks! :+1:',
+        'Thank you so much. Really appreciate it :+1:',
+        "Thanks a lot. I'm happy about that.",
+        'Thank you, dear.',
+        'Thank you, I will report to your boss. I mean BOSS.',
+        'Many thanks. You :guitar:',
+        'You are so kind. Thanks :+1:',
+        'Okay, will report that. Thanks.',
+        'You are so hardworking today. Thanks.',
+        'Love that. Thanks :+1:',
+        "I see. That's intense! Thanks.",
+        'Ah, okay. Thanks a lot.',
+        'Sounds good. Thank you.',
+        "That's a lot. I do not envy you. Thanks, anyway! :+1:"
+    )
+
 
 
 class WorldTick(Job):
@@ -229,40 +284,6 @@ class CheckReportsTask(Task):
 
 
 class AskStatusTask(Task):
-    PHRASES = (
-        'Hey, just wanted to ask your current status for {}, how it is going?',
-        'Psst. I know, you hate it. But I have to ask. Any blockers on {}?',
-
-        "Hi. Ponies don't have to report. People on {} made us "
-        "to ask other people to. How are you doing today? Give me few words "
-        "to share with the team.",
-
-        "Amazing day, dear. I'm gathering status update for {}. How it "
-        "is going?",
-
-        "Dear, I'm here to ask you about your status for the team {}. Could "
-        "you be so kind to share few words on what you are working now?",
-
-        "Hello, it's me again. How are you doing today? {} will be excited "
-        "to hear. I needs few words from you.",
-
-        "Heya. Just asked all our {} members. You are the last one. How's "
-        "your day? Anything you want to share with the team?",
-
-        "Hi there! Amazing day. Oh, wait, is that word banned on your team? "
-        "Nevermind. I'm here to ask you about your daily status update for "
-        "{}. Would you mind sharing few words?",
-
-        "Good morning, Dear. Just noticed you are online, decided to ask you "
-        "your current status for the {}. Few words to share?",
-
-        "Dear, sorry for disturbing you. Would you mind sharing your status "
-        "with {}? Few words.",
-
-        "Good morning. Your beloved pony is here again to ask your daily "
-        "status for {}. How are you doing today?",
-    )
-
     def __init__(self, team, user_id):
         self.team = team
         self.user_id = user_id
@@ -272,12 +293,14 @@ class AskStatusTask(Task):
 
         if not bot.is_online(self.user_id):
             logging.info(
-                'User {} is not online, skipping'.format(self.user_id))
+                'User {} is not online, will try later'.format(self.user_id))
             return
 
-        if bot.get_user_lock(self.user_id):
+        current_lock = bot.get_user_lock(self.user_id)
+        if current_lock:
             logging.info(
-                'User {} is already locked, skipping'.format(self.user_id))
+                'User {} is already locked for {}, will wait for them to '
+                'respond'.format(self.user_id, current_lock))
             return
 
         # lock this user conversation, worst case till the end of day
@@ -292,7 +315,9 @@ class AskStatusTask(Task):
         bot.fast_queue.append(
             SendMessageTask(
                 to=self.user_id,
-                text=random.choice(self.PHRASES).format(team_data['name'])
+                text=random.choice(
+                    PHRASES.PLEASE_REPORT
+                ).format(team_data['name'])
             )
         )
 
@@ -331,13 +356,16 @@ class ReadMessageTask(Task):
         is_first_line = len(user_report['report']) == 0
         user_report['report'].append(self.data['text'])
 
-        logging.info('User {} says "{}"'.format(user_id, self.data['text']))
+        logging.info(u'User {} says "{}"'.format(user_id, self.data['text']))
 
         # give user extra seconds to add more lines
         bot.lock_user(user_id, team, expire_in=90)
         if is_first_line:
             bot.fast_queue.append(
-                SendMessageTask(to=user_id, text='Thanks! :+1:')
+                SendMessageTask(
+                    to=user_id,
+                    text=random.choice(PHRASES.THANKS)
+                )
             )
         else:
             bot.fast_queue.append(
@@ -347,7 +375,6 @@ class ReadMessageTask(Task):
 
 class FlushDBTask(Task):
     def execute(self, bot, slack):
-        logging.debug('Saving data')
         bot.storage.save()
         bot.slow_queue.append(FlushDBTask())
 
@@ -387,13 +414,12 @@ class Storage(object):
         with open(self._file_name, 'wb') as f:
             pickle.dump(self._data, f)
 
-        logging.debug('Saved db to disk')
-
         pretty_data = pprint.pformat({
             key: value for key, value in self._data.items()
             if key not in ['ims', 'users']
         }, indent=4)
         logging.debug(pretty_data)
+        logging.info('Flushed db to disk')
 
     def load(self):
         if not os.path.exists(self._file_name):
@@ -467,7 +493,18 @@ class StandupPonyPlugin(Plugin):
         self.fast_queue.append(ReadMessageTask(data=data))
 
     def process_im_created(self, data):
+        logging.info('IM created for user {}'.format(data.get('user')))
         self.fast_queue.append(UpdateIMList())
+
+    def process_user_typing(self, data):
+        logging.info('User {} is typing to channel {}'.format(
+            data.get('user'), data.get('channel')
+        ))
+
+    def process_presence_change(self, data):
+        logging.info('User {} is now {}'.format(
+            data.get('user'), data.get('presence')
+        ))
 
     def register_jobs(self):
         # slow queue
