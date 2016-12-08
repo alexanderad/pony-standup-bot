@@ -77,7 +77,7 @@ class SendReportSummary(Task):
             return
 
         reports = []
-        not_seen_online = []
+        offline_today = []
         for user_id, status in team_report.items():
             user_data = bot.get_user_by_id(user_id)
             if not user_data:
@@ -87,7 +87,7 @@ class SendReportSummary(Task):
             color = '#{}'.format(user_data.get('color'))
 
             if not status['seen_online']:
-                not_seen_online.append(full_name)
+                offline_today.append(full_name)
                 continue
 
             if not status.get('reported_at'):
@@ -101,14 +101,14 @@ class SendReportSummary(Task):
             reports.append({
                 'color': color,
                 'title': full_name,
-                'text': '\n'.join(status['report'])[:1024]
+                'text': u'\n'.join(status['report'])[:1024]
             })
 
-        if not_seen_online:
+        if offline_today:
             reports.append({
                 'color': '#f2f2f2',
                 'title': 'Offline today',
-                'text': ', '.join(not_seen_online)
+                'text': u', '.join(offline_today)
             })
 
         if reports:
@@ -281,7 +281,7 @@ class ReadMessage(Task):
 
         logging.info(u'User {} says "{}"'.format(user_id, self.data['text']))
 
-        # give user extra seconds to add more lines
+        # give user extra seconds to add more lines in context of this lock
         bot.lock_user(user_id, team, expire_in=90)
         if is_first_line:
             bot.fast_queue.append(

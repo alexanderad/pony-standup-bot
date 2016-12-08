@@ -26,7 +26,7 @@ class Dictionary(object):
         "your day? Anything you want to share with the team?",
 
         "Hi there! Amazing day. Oh, wait, is that word banned on your team? "
-        "Nevermind. I'm here to ask you your daily status update for {}."
+        "Nevermind. I'm here to ask you your daily status update for {}. "
         "Would you mind sharing few words?",
 
         "Good morning, dear. Just noticed you are online, decided to ask you "
@@ -41,8 +41,8 @@ class Dictionary(object):
         "Hello, dear. Pony here. What's your story today? Anything to share "
         "with {}?",
 
-        "Honey, good morning! That's a Standup Pony, your best friend. How are "
-        "you doing today? Asking for {}.",
+        "Honey, good morning! That's a Standup Pony, your best friend. How "
+        "are you doing today? Asking for {}.",
 
         "Bonjorno. Busy day, eh? May I ask you to spend few seconds to tell "
         "me your current status? Just a few words to share with the {}.",
