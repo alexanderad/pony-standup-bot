@@ -276,6 +276,7 @@ class ReadMessage(Task):
         report = bot.storage.get('report')
         user_report = report[today][team][user_id]
         user_report['reported_at'] = datetime.utcnow()
+        user_report['seen_online'] = True
         is_first_line = len(user_report['report']) == 0
         user_report['report'].append(self.data['text'])
 
