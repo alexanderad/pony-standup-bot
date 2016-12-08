@@ -7,17 +7,17 @@ class Dictionary(object):
     PLEASE_REPORT = (
         "Hey, just wanted to ask your current status for {}, how it is going?",
 
-        "Psst. I know, you hate it. But I have to ask for {} Any blockers?",
+        "Psst. I know, you hate it. But I have to ask for {}. Any blockers?",
 
         "Hi. Ponies don't have to report. However people on {} made us "
         "to ask other people to. How are you doing today? Give me few words "
         "to share with the team.",
 
-        "Amazing day, dear. I have a questionnaire here. Invented by {}. How "
+        "Amazing day, dear. I have a questionnaire here. Sponsored by {}. How "
         "it is going on your side today?",
 
-        "Dear, I'm here to ask you about your status for the team {}. Could "
-        "you be so kind to share few words on what you are working now?",
+        "Dear, I'm here to ask you about your status for {}. Could "
+        "you be so kind to share few words on what you are working on now?",
 
         "Hello, it's me again. How are you doing today? {} will be excited "
         "to hear. I need just few words from you.",
@@ -29,23 +29,23 @@ class Dictionary(object):
         "Nevermind. I'm here to ask you your daily status update for {}."
         "Would you mind sharing few words?",
 
-        "Good morning, Dear. Just noticed you are online, decided to ask you "
+        "Good morning, dear. Just noticed you are online, decided to ask you "
         "your current status for the {}. Few words to share?",
 
-        "Dear, sorry for disturbing you. Would you mind sharing your status "
-        "with {}? Few words.",
+        "Dear, I apologise for the inconvenience. Would you mind sharing "
+        "your status with {}? Few words.",
 
         "Good morning. Your beloved pony is here again to ask your daily "
         "status for {}. How are you doing today?",
 
-        "Hello, Dear. Pony here. What's your story today? Anything to share "
+        "Hello, dear. Pony here. What's your story today? Anything to share "
         "with {}?",
 
-        "Honey, good morning! That's Standup Pony, your best friend. How are "
+        "Honey, good morning! That's a Standup Pony, your best friend. How are "
         "you doing today? Asking for {}.",
 
         "Bonjorno. Busy day, eh? May I ask you to spend few seconds to tell "
-        "me your story? Just a few words to share with the {}.",
+        "me your current status? Just a few words to share with the {}.",
 
         "Hello there. I'm asking you the same thing each day. Because of {}. "
         "Feels a bit like a date to me. Oh well, what's your today's status?",
