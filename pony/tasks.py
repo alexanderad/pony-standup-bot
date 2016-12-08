@@ -59,19 +59,19 @@ class SendReportSummary(Task):
 
         today = datetime.utcnow().date()
         if today not in report:
-            logging.error('Nothing to report for {}'.format(today))
+            logging.info('Nothing to report for {}'.format(today))
             return
 
         team_config = bot.plugin_config[self.team]
 
         team_report = report.get(today, {}).get(self.team)
         if team_report is None:
-            logging.error('Nothing to report for team {} at {}'.format(
+            logging.info('Nothing to report for team {} at {}'.format(
                 self.team, today))
             return
 
         if team_report.get('reported_at') is not None:
-            logging.error('Already reported for team {} at {}'.format(
+            logging.info('Already reported for team {} at {}'.format(
                 self.team, today))
             return
 
