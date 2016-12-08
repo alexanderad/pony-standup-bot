@@ -60,6 +60,8 @@ class Dictionary(object):
 
         "Can't stop being bossy and asking people on {} their daily status. "
         "What do you have to say?",
+
+        "Hi. That's a {} check in. How did it go today?"
     )
     THANKS = (
         "Thanks! :+1:",
