@@ -1,4 +1,6 @@
 # coding=utf-8
+import string
+from datetime import datetime
 
 
 class Dictionary(object):
@@ -82,3 +84,20 @@ class Dictionary(object):
         "No way, that's a lot!",
         "Noted that :white_check_mark:",
     )
+
+    @staticmethod
+    def initial_seed(user_id):
+        # Slack IDs look like U023BECGF, U04B1CDVB, U04RVVBAY, etc
+        digits = [
+            string.letters.index(x) if not x.isdigit() else int(x)
+            for x in user_id
+        ]
+        return sum(digits)
+
+
+    @classmethod
+    def pick(cls, phrases, user_id):
+        # we want random phrases to be more predictable
+        seed = cls.initial_seed(user_id)
+        day_of_year = datetime.utcnow().timetuple().tm_yday
+        return phrases[(seed + day_of_year) % len(phrases)]

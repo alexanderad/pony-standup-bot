@@ -1,5 +1,4 @@
 # coding=utf-8
-import random
 import logging
 import dateutil.tz
 import dateutil.parser
@@ -238,8 +237,9 @@ class AskStatus(Task):
         bot.fast_queue.append(
             SendMessage(
                 to=self.user_id,
-                text=random.choice(
-                    Dictionary.PLEASE_REPORT
+                text=Dictionary.pick(
+                    phrases=Dictionary.PLEASE_REPORT,
+                    user_id=self.user_id
                 ).format(team_data['name'])
             )
         )
@@ -287,7 +287,10 @@ class ReadMessage(Task):
             bot.fast_queue.append(
                 SendMessage(
                     to=user_id,
-                    text=random.choice(Dictionary.THANKS)
+                    text=Dictionary.pick(
+                        phrases=Dictionary.THANKS,
+                        user_id=user_id
+                    )
                 )
             )
         else:
