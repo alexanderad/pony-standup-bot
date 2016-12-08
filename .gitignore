@@ -56,5 +56,5 @@ ENV/
 
 # also
 *.db
-rtmbot.conf
+pony.conf
 .idea
