@@ -202,7 +202,7 @@ class CheckReports(Task):
 
             if self._too_early_to_ask(bot, team_config['ask_earliest']):
                 logging.info('Too early to ask people on team {}'.format(team))
-                return
+                continue
 
             if self._time_to_report(bot, team_config['report_by']):
                 bot.fast_queue.append(SendReportSummary(team))
