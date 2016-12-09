@@ -152,10 +152,16 @@ class CheckReports(Task):
         return not is_weekend
 
     def _time_to_report(self, bot, report_by):
-        bot_tz = dateutil.tz.gettz(bot.plugin_config['timezone'])
-        report_by = dateutil.parser.parse(report_by).replace(tzinfo=bot_tz)
+        tz = dateutil.tz.gettz(bot.plugin_config['timezone'])
+        report_by = dateutil.parser.parse(report_by).replace(tzinfo=tz)
         now = datetime.now(dateutil.tz.tzlocal())
         return now >= report_by
+
+    def _too_early_to_ask(self, bot, ask_earliest):
+        tz = dateutil.tz.gettz(bot.plugin_config['timezone'])
+        ask_earliest = dateutil.parser.parse(ask_earliest).replace(tzinfo=tz)
+        now = datetime.now(dateutil.tz.tzlocal())
+        return now < ask_earliest
 
     def _get_multi_team_users(self, bot, teams):
         user_teams = defaultdict(list)
@@ -192,6 +198,10 @@ class CheckReports(Task):
             team_config = bot.plugin_config[team]
 
             if team_report.get('reported_at'):
+                return
+
+            if self._too_early_to_ask(bot, team_config['ask_earliest']):
+                logging.info('Too early to ask people on team {}'.format(team))
                 return
 
             if self._time_to_report(bot, team_config['report_by']):
