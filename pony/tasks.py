@@ -3,6 +3,7 @@ import logging
 import dateutil.tz
 import dateutil.parser
 from datetime import datetime, timedelta
+from collections import defaultdict
 
 from .dictionary import Dictionary
 
@@ -156,6 +157,18 @@ class CheckReports(Task):
         now = datetime.now(dateutil.tz.tzlocal())
         return now >= report_by
 
+    def _get_multi_team_users(self, bot, teams):
+        user_teams = defaultdict(list)
+        for team in teams:
+            for user in bot.plugin_config[team]:
+                user_teams[user].append(team)
+
+        return {
+            user: teams
+            for user, teams in user_teams.items()
+            if len(teams) > 1
+        }
+
     def execute(self, bot, slack):
         # schedule next check
         bot.slow_queue.append(CheckReports())
@@ -198,8 +211,6 @@ class CheckReports(Task):
                 if team_report[user_id].get('reported_at'):
                     continue
 
-                team_report[user_id]['seen_online'] = bot.is_online(user_id)
-
                 bot.fast_queue.append(
                     AskStatus(team=team, user_id=user_id)
                 )
@@ -211,18 +222,23 @@ class AskStatus(Task):
         self.user_id = user_id
 
     def execute(self, bot, slack):
-        team_data = bot.plugin_config[self.team]
 
-        if not bot.is_online(self.user_id):
-            logging.info(
-                'User {} is not online, will try later'.format(self.user_id))
-            return
+        team_data = bot.plugin_config[self.team]
 
         current_lock = bot.get_user_lock(self.user_id)
         if current_lock:
             logging.info(
                 'User {} is already locked for {}, will wait for them to '
                 'respond'.format(self.user_id, current_lock))
+            return
+
+        if bot.is_online(self.user_id):
+            today = datetime.utcnow().date()
+            report = bot.storage.get('report')
+            report[today][self.team][self.user_id]['seen_online'] = True
+        else:
+            logging.info(
+                'User {} is not online, will try later'.format(self.user_id))
             return
 
         # lock this user conversation, worst case till the end of day
@@ -276,7 +292,6 @@ class ReadMessage(Task):
         report = bot.storage.get('report')
         user_report = report[today][team][user_id]
         user_report['reported_at'] = datetime.utcnow()
-        user_report['seen_online'] = True
         is_first_line = len(user_report['report']) == 0
         user_report['report'].append(self.data['text'])
 
