@@ -48,7 +48,7 @@ class Storage(object):
             if key not in ['ims', 'users']
         }, indent=4)
         logging.info(pretty_data)
-        logging.info('Flushed db to disk')
+        logging.debug('Flushed db to disk')
 
     def load(self):
         if not os.path.exists(self._file_name):

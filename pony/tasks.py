@@ -20,6 +20,7 @@ class SendMessage(Task):
         self.attachments = attachments
 
     def execute(self, bot, slack):
+        logging.info(u'Sending message "{}" to {}'.format(self.text, self.to))
         slack.api_call(
             'chat.postMessage',
             channel=self.to,
@@ -60,19 +61,19 @@ class SendReportSummary(Task):
 
         today = datetime.utcnow().date()
         if today not in report:
-            logging.info('Nothing to report for {}'.format(today))
+            logging.debug('Nothing to report for {}'.format(today))
             return
 
         team_config = bot.plugin_config[self.team]
 
         team_report = report.get(today, {}).get(self.team)
         if team_report is None:
-            logging.info('Nothing to report for team {} at {}'.format(
+            logging.debug('Nothing to report for team {} at {}'.format(
                 self.team, today))
             return
 
         if team_report.get('reported_at') is not None:
-            logging.info('Already reported for team {} at {}'.format(
+            logging.debug('Already reported for team {} at {}'.format(
                 self.team, today))
             return
 
@@ -187,7 +188,7 @@ class CheckReports(Task):
 
         is_reportable = self._is_reportable(bot, today)
         if not is_reportable:
-            logging.info('Today is not reportable (weekend or holiday)')
+            logging.debug('Today is not reportable (weekend or holiday)')
             return
 
         report = bot.storage.get('report', {})
@@ -206,7 +207,7 @@ class CheckReports(Task):
                 return
 
             if self._too_early_to_ask(bot, team_config['ask_earliest']):
-                logging.info('Too early to ask people on team {}'.format(team))
+                logging.debug('Too early to ask people on team {}'.format(team))
                 continue
 
             if self._time_to_report(bot, team_config['report_by']):
@@ -216,14 +217,18 @@ class CheckReports(Task):
             for user in team_config['users']:
                 user_data = bot.get_user_by_name(user)
                 if not user_data:
+                    logging.info('Unable to find user by name: {}'.format(
+                        user))
                     continue
 
                 user_id = user_data['id']
 
                 if user_id not in team_report:
+                    # no report yet today
                     team_report[user_id] = {'report': []}
 
                 if team_report[user_id].get('reported_at'):
+                    # already reported
                     continue
 
                 bot.fast_queue.append(
@@ -242,17 +247,17 @@ class AskStatus(Task):
 
         current_lock = bot.get_user_lock(self.user_id)
         if current_lock:
-            logging.info(
+            logging.debug(
                 'User {} is already locked for {}, will wait for them to '
                 'respond'.format(self.user_id, current_lock))
             return
 
-        if bot.is_online(self.user_id):
+        if bot.user_is_online(self.user_id):
             today = datetime.utcnow().date()
             report = bot.storage.get('report')
             report[today][self.team][self.user_id]['seen_online'] = True
         else:
-            logging.info(
+            logging.debug(
                 'User {} is not online, will try later'.format(self.user_id))
             return
 

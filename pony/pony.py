@@ -47,7 +47,7 @@ class StandupPonyPlugin(Plugin):
             if user['name'] == user_name:
                 return user
 
-    def is_online(self, user_id):
+    def user_is_online(self, user_id):
         data = self.slack_client.api_call('users.getPresence', user=user_id)
         if data['ok']:
             return data['presence'] == 'active'
