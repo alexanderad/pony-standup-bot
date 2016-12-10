@@ -81,7 +81,7 @@ class SendReportSummary(Task):
         for user_id, status in team_report.items():
             user_data = bot.get_user_by_id(user_id)
             if not user_data:
-                logging.info('Unable to find user by id: {}'.format(user_id))
+                logging.error('Unable to find user by id: {}'.format(user_id))
                 continue
 
             full_name = user_data['profile'].get('real_name')
@@ -204,10 +204,12 @@ class CheckReports(Task):
             team_config = bot.plugin_config[team]
 
             if team_report.get('reported_at'):
+                logging.debug('Team {} already reported'.format(team))
                 return
 
             if self._too_early_to_ask(bot, team_config['ask_earliest']):
-                logging.debug('Too early to ask people on team {}'.format(team))
+                logging.debug('Too early to ask people on team {}'.format(
+                    team))
                 continue
 
             if self._time_to_report(bot, team_config['report_by']):
@@ -217,7 +219,7 @@ class CheckReports(Task):
             for user in team_config['users']:
                 user_data = bot.get_user_by_name(user)
                 if not user_data:
-                    logging.info('Unable to find user by name: {}'.format(
+                    logging.error('Unable to find user by name: {}'.format(
                         user))
                     continue
 

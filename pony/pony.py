@@ -94,7 +94,7 @@ class StandupPonyPlugin(Plugin):
                 interval=120
             )
         )
-        logging.debug('Registered slow queue')
+        logging.info('Registered slow queue')
 
         # fast queue
         self.jobs.append(
@@ -104,4 +104,4 @@ class StandupPonyPlugin(Plugin):
                 interval=0.75
             )
         )
-        logging.debug('Registered fast queue')
+        logging.info('Registered fast queue')
