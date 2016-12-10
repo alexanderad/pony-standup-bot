@@ -76,26 +76,22 @@ class SendReportSummary(Task):
                 self.team, today))
             return
 
-        reports = []
-        offline_today = []
+        reports, offline_users, no_response_users = [], [], []
         for user_id, status in team_report.items():
             user_data = bot.get_user_by_id(user_id)
             if not user_data:
+                logging.info('Unable to find user by id: {}'.format(user_id))
                 continue
 
             full_name = user_data['profile'].get('real_name')
             color = '#{}'.format(user_data.get('color'))
 
-            if not status['seen_online']:
-                offline_today.append(full_name)
+            if not status.get('seen_online'):
+                offline_users.append(full_name)
                 continue
 
             if not status.get('reported_at'):
-                reports.append({
-                    'color': color,
-                    'title': full_name,
-                    'text': 'said nothing'
-                })
+                no_response_users.append(full_name)
                 continue
 
             reports.append({
@@ -104,11 +100,18 @@ class SendReportSummary(Task):
                 'text': u'\n'.join(status['report'])[:1024]
             })
 
-        if offline_today:
+        if no_response_users:
             reports.append({
-                'color': '#f2f2f2',
-                'title': 'Offline today',
-                'text': u', '.join(offline_today)
+                'color': '#ccc',
+                'title': 'No Response Today',
+                'text': u', '.join(no_response_users)
+            })
+
+        if offline_users:
+            reports.append({
+                'color': '#ccc',
+                'title': 'Offline Today',
+                'text': u', '.join(offline_users)
             })
 
         if reports:
