@@ -147,9 +147,10 @@ class UnlockUsers(Task):
 
 
 class CheckReports(Task):
-    def _is_reportable(self, today):
+    def _is_reportable(self, bot, today):
         is_weekend = today.isoweekday() in (6, 7)
-        return not is_weekend
+        is_holiday = today in bot.plugin_config.get('holidays', [])
+        return not is_weekend and not is_holiday
 
     def _time_to_report(self, bot, report_by):
         tz = dateutil.tz.gettz(bot.plugin_config['timezone'])
@@ -181,8 +182,9 @@ class CheckReports(Task):
 
         today = datetime.utcnow().date()
 
-        is_reportable = self._is_reportable(today)
+        is_reportable = self._is_reportable(bot, today)
         if not is_reportable:
+            logging.info('Today is not reportable (weekend or holiday)')
             return
 
         report = bot.storage.get('report', {})

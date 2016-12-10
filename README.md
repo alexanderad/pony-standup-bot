@@ -5,6 +5,7 @@ Tiny Standup Bot for Slack
 * multiple standups per team
 * private daily status collection
 * public standup report summary on schedule
+* understands holidays and weekends
 * love and harmony
 
 ### Usage
