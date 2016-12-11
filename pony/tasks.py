@@ -119,7 +119,9 @@ class SendReportSummary(Task):
             bot.fast_queue.append(
                 SendMessage(
                     to=channel,
-                    text='Standup Summary for {}'.format(team_config['name']),
+                    text='Summary for {}: {}'.format(
+                        team_config['name'], today.strftime('%A, %d %B')
+                    ),
                     attachments=reports
                 )
             )
