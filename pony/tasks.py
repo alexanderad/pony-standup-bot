@@ -288,6 +288,9 @@ class ReadMessage(Task):
         # check if there are any active context for this user
         teams = bot.get_user_lock(user_id)
         if teams is None:
+            logging.debug(
+                'User {} is not known to have any active context'.format(
+                    user_id))
             return
 
         # update status
