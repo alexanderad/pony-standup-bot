@@ -234,19 +234,16 @@ class CheckReports(Task):
                     continue
 
                 bot.fast_queue.append(
-                    AskStatus(team=team, user_id=user_id)
+                    AskStatus(teams=teams_by_user[user_id], user_id=user_id)
                 )
 
 
 class AskStatus(Task):
-    def __init__(self, team, user_id):
-        self.team = team
+    def __init__(self, teams, user_id):
+        self.teams = teams
         self.user_id = user_id
 
     def execute(self, bot, slack):
-
-        team_data = bot.plugin_config[self.team]
-
         current_lock = bot.get_user_lock(self.user_id)
         if current_lock:
             logging.debug(
@@ -257,7 +254,8 @@ class AskStatus(Task):
         if bot.user_is_online(self.user_id):
             today = datetime.utcnow().date()
             report = bot.storage.get('report')
-            report[today][self.team][self.user_id]['seen_online'] = True
+            for team in self.teams:
+                report[today][team][self.user_id]['seen_online'] = True
         else:
             logging.debug(
                 'User {} is not online, will try later'.format(self.user_id))
@@ -268,17 +266,18 @@ class AskStatus(Task):
         expire_in = (
             timedelta(hours=24) - timedelta(hours=now.hour, minutes=now.minute)
         ).total_seconds()
-        bot.lock_user(self.user_id, self.team, expire_in)
+        bot.lock_user(self.user_id, self.teams, expire_in)
 
-        logging.info('Asked user {} their status for team {}'.format(
-            self.user_id, self.team))
+        logging.info('Asked user {} their status for {}'.format(
+            self.user_id, self.teams))
+
         bot.fast_queue.append(
             SendMessage(
                 to=self.user_id,
                 text=Dictionary.pick(
                     phrases=Dictionary.PLEASE_REPORT,
                     user_id=self.user_id
-                ).format(team_data['name'])
+                )
             )
         )
 
@@ -305,22 +304,23 @@ class ReadMessage(Task):
         user_id = self.data['user']
 
         # check if there are any active context for this user
-        team = bot.get_user_lock(user_id)
-        if team is None:
+        teams = bot.get_user_lock(user_id)
+        if teams is None:
             return
 
-        # update status for most recent locked team
+        # update status
         today = datetime.utcnow().date()
-        report = bot.storage.get('report')
-        user_report = report[today][team][user_id]
-        user_report['reported_at'] = datetime.utcnow()
-        is_first_line = len(user_report['report']) == 0
-        user_report['report'].append(self.data['text'])
+        report, is_first_line = bot.storage.get('report'), False
+        for team in teams:
+            user_report = report[today][team][user_id]
+            user_report['reported_at'] = datetime.utcnow()
+            is_first_line = len(user_report['report']) == 0
+            user_report['report'].append(self.data['text'])
 
         logging.info(u'User {} says "{}"'.format(user_id, self.data['text']))
 
         # give user extra seconds to add more lines in context of this lock
-        bot.lock_user(user_id, team, expire_in=90)
+        bot.lock_user(user_id, teams, expire_in=90)
         if is_first_line:
             bot.fast_queue.append(
                 SendMessage(
