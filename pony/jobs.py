@@ -17,6 +17,5 @@ class WorldTick(Job):
         for x in range(visible_tasks):
             task = self.queue.popleft()
             task.execute(bot=self.bot, slack=slack)
-            time.sleep(0.25)
 
         return []

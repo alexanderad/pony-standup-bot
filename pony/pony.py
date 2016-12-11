@@ -86,22 +86,22 @@ class StandupPonyPlugin(Plugin):
         ))
 
     def register_jobs(self):
-        # slow queue
+        # slow queue, 5 minutes intervals
         self.jobs.append(
             WorldTick(
                 bot=self,
                 queue=self.slow_queue,
-                interval=120
+                interval=5 * 60
             )
         )
         logging.info('Registered slow queue')
 
-        # fast queue
+        # fast queue, half a second delay before tasks flushed
         self.jobs.append(
             WorldTick(
                 bot=self,
                 queue=self.fast_queue,
-                interval=0.75
+                interval=0.5
             )
         )
         logging.info('Registered fast queue')

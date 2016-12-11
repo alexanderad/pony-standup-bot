@@ -58,27 +58,26 @@ class SendReportSummary(Task):
 
     def execute(self, bot, slack):
         report = bot.storage.get('report')
-
         today = datetime.utcnow().date()
+        logging.info('Building report summary for {}'.format(self.team))
+
         if today not in report:
-            logging.debug('Nothing to report for {}'.format(today))
+            logging.debug('Nothing to report for today')
             return
 
         team_config = bot.plugin_config[self.team]
 
-        team_report = report.get(today, {}).get(self.team)
+        team_report = report[today].get(self.team)
         if team_report is None:
-            logging.debug('Nothing to report for team {} at {}'.format(
-                self.team, today))
+            logging.debug('Nothing to report for this team')
             return
 
         if team_report.get('reported_at') is not None:
-            logging.debug('Already reported for team {} at {}'.format(
-                self.team, today))
+            logging.debug('Already reported today')
             return
 
         reports, offline_users, no_response_users = [], [], []
-        for user_id, status in team_report.items():
+        for user_id, data in team_report.items():
             user_data = bot.get_user_by_id(user_id)
             if not user_data:
                 logging.error('Unable to find user by id: {}'.format(user_id))
@@ -87,18 +86,18 @@ class SendReportSummary(Task):
             full_name = user_data['profile'].get('real_name')
             color = '#{}'.format(user_data.get('color'))
 
-            if not status.get('seen_online'):
+            if not data.get('seen_online'):
                 offline_users.append(full_name)
                 continue
 
-            if not status.get('reported_at'):
+            if not data.get('reported_at'):
                 no_response_users.append(full_name)
                 continue
 
             reports.append({
                 'color': color,
                 'title': full_name,
-                'text': u'\n'.join(status['report'])[:1024]
+                'text': u'\n'.join(data['report'])[:1024]
             })
 
         if no_response_users:
@@ -127,7 +126,7 @@ class SendReportSummary(Task):
 
             team_report['reported_at'] = datetime.utcnow()
 
-            logging.info('Reported status for team {}'.format(self.team))
+            logging.info('Reported status for {}'.format(self.team))
 
         bot.fast_queue.append(UnlockUsers(team=self.team))
 
@@ -146,7 +145,7 @@ class UnlockUsers(Task):
 
             user_id = user_data['id']
             user_lock = bot.get_user_lock(user_id)
-            if user_lock and user_lock == self.team:
+            if user_lock:
                 bot.unlock_user(user_id)
 
 
@@ -156,29 +155,29 @@ class CheckReports(Task):
         is_holiday = today in bot.plugin_config.get('holidays', [])
         return not is_weekend and not is_holiday
 
-    def _time_to_report(self, bot, report_by):
+    def _is_time_to_send_summary(self, bot, report_by):
         tz = dateutil.tz.gettz(bot.plugin_config['timezone'])
         report_by = dateutil.parser.parse(report_by).replace(tzinfo=tz)
         now = datetime.now(dateutil.tz.tzlocal())
         return now >= report_by
 
-    def _too_early_to_ask(self, bot, ask_earliest):
+    def _is_too_early_to_ask(self, bot, ask_earliest):
         tz = dateutil.tz.gettz(bot.plugin_config['timezone'])
         ask_earliest = dateutil.parser.parse(ask_earliest).replace(tzinfo=tz)
         now = datetime.now(dateutil.tz.tzlocal())
         return now < ask_earliest
 
-    def _get_multi_team_users(self, bot, teams):
-        user_teams = defaultdict(list)
-        for team in teams:
-            for user in bot.plugin_config[team]:
-                user_teams[user].append(team)
+    def _init_empty_report(self, bot, team_config):
+        team_report = dict()
+        for user in team_config['users']:
+            user_data = bot.get_user_by_name(user)
+            if not user_data:
+                logging.error('Unable to find user by name {}'.format(user))
+                continue
 
-        return {
-            user: teams
-            for user, teams in user_teams.items()
-            if len(teams) > 1
-        }
+            team_report[user_data['id']] = {'report': []}
+
+        return team_report
 
     def execute(self, bot, slack):
         # schedule next check
@@ -193,44 +192,45 @@ class CheckReports(Task):
 
         report = bot.storage.get('report', {})
         if today not in report:
+            logging.info('Initializing empty report for {}'.format(today))
             report[today] = dict()
 
+        # ensure report entries exist for current day and all the teams
         teams = bot.plugin_config['active_teams']
         for team in teams:
-            if team not in report[today]:
-                report[today][team] = {}
-
-            team_report = report[today][team]
             team_config = bot.plugin_config[team]
+
+            if team not in report[today]:
+                logging.info(
+                    'Initializing empty report for {} {}'.format(
+                        team, today))
+                report[today][team] = self._init_empty_report(bot, team_config)
+
+        teams_by_user = defaultdict(list)
+        for team, users_data in report[today].items():
+            for user_id in users_data.keys():
+                teams_by_user[user_id].append(team)
+
+        for team in teams:
+            team_config = bot.plugin_config[team]
+            team_report = report[today][team]
 
             if team_report.get('reported_at'):
                 logging.debug('Team {} already reported'.format(team))
-                return
-
-            if self._too_early_to_ask(bot, team_config['ask_earliest']):
-                logging.debug('Too early to ask people on team {}'.format(
-                    team))
                 continue
 
-            if self._time_to_report(bot, team_config['report_by']):
+            if self._is_time_to_send_summary(bot, team_config['report_by']):
+                logging.debug('Its time to send summary for {}'.format(team))
                 bot.fast_queue.append(SendReportSummary(team))
-                return
+                continue
 
-            for user in team_config['users']:
-                user_data = bot.get_user_by_name(user)
-                if not user_data:
-                    logging.error('Unable to find user by name: {}'.format(
-                        user))
-                    continue
+            if self._is_too_early_to_ask(bot, team_config['ask_earliest']):
+                logging.debug('Too early to ask people on {}'.format(team))
+                continue
 
-                user_id = user_data['id']
-
-                if user_id not in team_report:
-                    # no report yet today
-                    team_report[user_id] = {'report': []}
+            for user_id in team_report.keys():
 
                 if team_report[user_id].get('reported_at'):
-                    # already reported
                     continue
 
                 bot.fast_queue.append(
