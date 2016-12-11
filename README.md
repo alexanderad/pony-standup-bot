@@ -3,10 +3,10 @@ Tiny Standup Bot for Slack
 
 ### Features
 * multiple standups per team
+* multiple standups attendees
 * private daily status collection
 * public standup report summary on schedule
 * understands holidays and weekends
-* love and harmony
 
 ### Usage
 * [create a bot](https://my.slack.com/services/new/bot) for your team
