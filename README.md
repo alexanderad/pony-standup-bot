@@ -1,4 +1,6 @@
 # Pony Standup Bot
+[![Build Status](https://travis-ci.org/alexanderad/pony-standup-bot.svg?branch=master)](https://travis-ci.org/alexanderad/pony-standup-bot)
+
 Tiny Standup Bot for Slack
 
 ### Features
