@@ -128,26 +128,6 @@ class SendReportSummary(Task):
 
             logging.info('Reported status for {}'.format(self.team))
 
-        bot.fast_queue.append(UnlockUsers(team=self.team))
-
-
-class UnlockUsers(Task):
-    def __init__(self, team):
-        self.team = team
-
-    def execute(self, bot, slack):
-        team_config = bot.plugin_config[self.team]
-
-        for user in team_config['users']:
-            user_data = bot.get_user_by_name(user)
-            if not user_data:
-                continue
-
-            user_id = user_data['id']
-            user_lock = bot.get_user_lock(user_id)
-            if user_lock:
-                bot.unlock_user(user_id)
-
 
 class CheckReports(Task):
     def _is_reportable(self, bot, today):

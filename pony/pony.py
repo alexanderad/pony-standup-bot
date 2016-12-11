@@ -59,11 +59,6 @@ class StandupPonyPlugin(Plugin):
         self.storage.set(lock_key, team, expire_in=expire_in)
         logging.info('Locked user {} for {} sec'.format(user_id, expire_in))
 
-    def unlock_user(self, user_id):
-        lock_key = '{}_lock'.format(user_id)
-        self.storage.unset(lock_key)
-        logging.info('Unlocked user {}'.format(user_id))
-
     def get_user_lock(self, user_id):
         lock_key = '{}_lock'.format(user_id)
         return self.storage.get(lock_key)
