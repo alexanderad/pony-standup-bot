@@ -97,7 +97,6 @@ class Dictionary(object):
         ]
         return sum(digits)
 
-
     @classmethod
     def pick(cls, phrases, user_id):
         # we want random phrases to be more predictable
