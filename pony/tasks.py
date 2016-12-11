@@ -119,7 +119,7 @@ class SendReportSummary(Task):
             bot.fast_queue.append(
                 SendMessage(
                     to=channel,
-                    text='Standup Summary for Today',
+                    text='Standup Summary for {}'.format(team_config['name']),
                     attachments=reports
                 )
             )
@@ -220,7 +220,7 @@ class CheckReports(Task):
                 continue
 
             if self._is_time_to_send_summary(bot, team_config['report_by']):
-                logging.debug('Its time to send summary for {}'.format(team))
+                logging.debug('It is time to send summary for {}'.format(team))
                 bot.fast_queue.append(SendReportSummary(team))
                 continue
 
