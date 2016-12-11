@@ -55,7 +55,7 @@ class Dictionary(object):
 
         "Another day, another question. Oh, wait, question is the same. Your "
         "status is all I need to know. It's not me, it is for the team.",
-        
+
         "Good day. Having English breakfast while pony asks people their "
         "status for the team dear? How do you do?",
 

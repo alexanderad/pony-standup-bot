@@ -20,7 +20,8 @@ class Storage(object):
         with self._lock:
             self._data[key] = value
             if expire_in is not None:
-                self._ts[key] = datetime.utcnow() + timedelta(seconds=expire_in)
+                self._ts[key] = datetime.utcnow() + timedelta(
+                    seconds=expire_in)
 
     def unset(self, key):
         with self._lock:
@@ -35,7 +36,7 @@ class Storage(object):
                 del self._ts[key]
 
             if key not in self._data and default is not None:
-               self._data[key] = default
+                self._data[key] = default
 
             return self._data.get(key)
 
