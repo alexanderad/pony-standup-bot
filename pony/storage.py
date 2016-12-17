@@ -11,29 +11,36 @@ from datetime import datetime, timedelta
 class Storage(object):
     """Simple key value storage."""
     def __init__(self, file_name=None):
+        self._lock = threading.Lock()
         self._file_name = file_name
         self._data = self.load()
-        self._ts = dict()
-        self._lock = threading.Lock()
+
+        # get or set expiration dictionary
+        if self._data.get('_expire') is None:
+            self._data['_expire'] = dict()
 
     def set(self, key, value, expire_in=None):
         with self._lock:
             self._data[key] = value
             if expire_in is not None:
-                self._ts[key] = datetime.utcnow() + timedelta(
+                self._data['_expire'][key] = datetime.utcnow() + timedelta(
                     seconds=expire_in)
 
     def unset(self, key):
         with self._lock:
             del self._data[key]
-            if key in self._ts:
-                del self._ts[key]
+            if key in self._data['_expire']:
+                del self._data['_expire'][key]
 
     def get(self, key, default=None):
         with self._lock:
-            if key in self._ts and datetime.utcnow() > self._ts[key]:
+            is_expired_key = (
+                key in self._data['_expire']
+                and datetime.utcnow() > self._data['_expire'][key]
+            )
+            if is_expired_key:
                 del self._data[key]
-                del self._ts[key]
+                del self._data['_expire'][key]
 
             if key not in self._data and default is not None:
                 self._data[key] = default

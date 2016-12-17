@@ -103,14 +103,14 @@ class SendReportSummary(Task):
         if no_response_users:
             reports.append({
                 'color': '#ccc',
-                'title': 'No Response Today',
+                'title': 'No Response',
                 'text': u', '.join(no_response_users)
             })
 
         if offline_users:
             reports.append({
                 'color': '#ccc',
-                'title': 'Offline Today',
+                'title': 'Offline',
                 'text': u', '.join(offline_users)
             })
 
