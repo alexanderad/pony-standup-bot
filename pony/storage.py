@@ -51,11 +51,10 @@ class Storage(object):
         with open(self._file_name, 'wb') as f:
             pickle.dump(self._data, f)
 
-        pretty_data = pprint.pformat({
-            key: value for key, value in self._data.items()
-            if key not in ['ims', 'users']
-        }, indent=4)
-        logging.info(pretty_data)
+        logging.debug(pprint.pformat({
+             key: value for key, value in self._data.items()
+             if key not in ['ims', 'users']
+        }, indent=4))
         logging.debug('Flushed db to disk')
 
     def load(self):
