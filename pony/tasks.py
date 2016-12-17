@@ -9,11 +9,13 @@ from .dictionary import Dictionary
 
 
 class Task(object):
+    """Single task."""
     def execute(self, bot, slack):
         pass
 
 
 class SendMessage(Task):
+    """Sends a single message to channel or user."""
     def __init__(self, to, text, attachments=None):
         self.to = to
         self.text = text
@@ -31,6 +33,7 @@ class SendMessage(Task):
 
 
 class UpdateUserList(Task):
+    """Updates team user list."""
     def execute(self, bot, slack):
         logging.info('Updating user list')
         users = [
@@ -42,6 +45,7 @@ class UpdateUserList(Task):
 
 
 class UpdateIMList(Task):
+    """Updates current IM list."""
     def execute(self, bot, slack):
         logging.info('Updating IM list')
         ims = [
@@ -52,7 +56,15 @@ class UpdateIMList(Task):
         bot.storage.set('ims', ims)
 
 
+class SyncDB(Task):
+    """Syncs in-memory database to file."""
+    def execute(self, bot, slack):
+        bot.storage.save()
+        bot.slow_queue.append(SyncDB())
+
+
 class SendReportSummary(Task):
+    """Sends a report summary to team channel."""
     def __init__(self, team):
         self.team = team
 
@@ -132,6 +144,7 @@ class SendReportSummary(Task):
 
 
 class CheckReports(Task):
+    """Checks reports statuses."""
     def _is_reportable(self, bot, today):
         is_weekend = today.isoweekday() in (6, 7)
         is_holiday = today in bot.plugin_config.get('holidays', [])
@@ -221,6 +234,7 @@ class CheckReports(Task):
 
 
 class AskStatus(Task):
+    """Asks a single user their status."""
     def __init__(self, teams, user_id):
         self.teams = teams
         self.user_id = user_id
@@ -265,10 +279,12 @@ class AskStatus(Task):
 
 
 class ReadMessage(Task):
+    """Reads a single message."""
     def __init__(self, data):
         self.data = data
 
-    def is_dm(self, bot):
+    def is_direct_message(self, bot):
+        """Checks if this is a direct message."""
         return all([
             self.data.get('type') == 'message',
             'user' in self.data,
@@ -279,10 +295,41 @@ class ReadMessage(Task):
             ])
         ])
 
+    def is_bot_message(self):
+        """Checks if it is a bot message."""
+        return 'bot_id' in self.data
+
     def execute(self, bot, slack):
-        if not self.is_dm(bot):
+        is_direct_message = self.is_direct_message(bot)
+        is_bot_message = self.is_bot_message()
+
+        user_id = self.data['user']
+
+        if is_bot_message:
+            logging.debug(
+                'Skipping bot message from {}'.format(self.data['bot_id']))
             return
 
+        logging.info(u'User {} says "{}"'.format(user_id, self.data['text']))
+
+        if is_direct_message:
+            # in direct messages we only expect status messages
+            bot.fast_queue.append(
+                ReadStatusMessage(self.data)
+            )
+        else:
+            # this is not a direct message, this is message to channel
+            # where bot lives from somebody, we can look at words and
+            # reach somehow
+            text = self.data['text']
+
+
+class ReadStatusMessage(Task):
+    """Reads a status report from a user."""
+    def __init__(self, data):
+        self.data = data
+
+    def execute(self, bot, slack):
         user_id = self.data['user']
 
         # check if there are any active context for this user
@@ -290,7 +337,9 @@ class ReadMessage(Task):
         if teams is None:
             logging.debug(
                 'User {} is not known to have any active context'.format(
-                    user_id))
+                    user_id
+                )
+            )
             return
 
         # update status
@@ -301,8 +350,6 @@ class ReadMessage(Task):
             user_report['reported_at'] = datetime.utcnow()
             is_first_line = len(user_report['report']) == 0
             user_report['report'].append(self.data['text'])
-
-        logging.info(u'User {} says "{}"'.format(user_id, self.data['text']))
 
         # give user extra seconds to add more lines in context of this lock
         bot.lock_user(user_id, teams, expire_in=90)
@@ -320,9 +367,3 @@ class ReadMessage(Task):
             bot.fast_queue.append(
                 SendMessage(to=user_id, text="Ok, I'll add that too.")
             )
-
-
-class SyncDB(Task):
-    def execute(self, bot, slack):
-        bot.storage.save()
-        bot.slow_queue.append(SyncDB())
