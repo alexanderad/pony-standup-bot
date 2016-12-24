@@ -145,24 +145,30 @@ class SendReportSummary(Task):
 
 class CheckReports(Task):
     """Checks reports statuses."""
-    def _is_reportable(self, bot, today):
-        is_weekend = today.isoweekday() in (6, 7)
-        is_holiday = today in bot.plugin_config.get('holidays', [])
+    def is_weekend(self, today):
+        return today.isoweekday() in (6, 7)
+
+    def is_holiday(self, bot, today):
+        return today in bot.plugin_config.get('holidays', {})
+
+    def is_reportable(self, bot, today):
+        is_weekend = self.is_weekend(today)
+        is_holiday = self.is_holiday(bot, today)
         return not is_weekend and not is_holiday
 
-    def _is_time_to_send_summary(self, bot, report_by):
+    def is_time_to_send_summary(self, bot, report_by):
         tz = dateutil.tz.gettz(bot.plugin_config['timezone'])
         report_by = dateutil.parser.parse(report_by).replace(tzinfo=tz)
         now = datetime.now(dateutil.tz.tzlocal())
         return now >= report_by
 
-    def _is_too_early_to_ask(self, bot, ask_earliest):
+    def is_too_early_to_ask(self, bot, ask_earliest):
         tz = dateutil.tz.gettz(bot.plugin_config['timezone'])
         ask_earliest = dateutil.parser.parse(ask_earliest).replace(tzinfo=tz)
         now = datetime.now(dateutil.tz.tzlocal())
         return now < ask_earliest
 
-    def _init_empty_report(self, bot, team_config):
+    def init_empty_report(self, bot, team_config):
         team_report = dict()
         for user in team_config['users']:
             user_data = bot.get_user_by_name(user)
@@ -180,11 +186,6 @@ class CheckReports(Task):
 
         today = datetime.utcnow().date()
 
-        is_reportable = self._is_reportable(bot, today)
-        if not is_reportable:
-            logging.debug('Today is not reportable (weekend or holiday)')
-            return
-
         report = bot.storage.get('report', {})
         if today not in report:
             logging.info('Initializing empty report for {}'.format(today))
@@ -199,7 +200,7 @@ class CheckReports(Task):
                 logging.info(
                     'Initializing empty report for {} {}'.format(
                         team, today))
-                report[today][team] = self._init_empty_report(bot, team_config)
+                report[today][team] = self.init_empty_report(bot, team_config)
 
         teams_by_user = defaultdict(list)
         for team, users_data in report[today].items():
@@ -214,12 +215,40 @@ class CheckReports(Task):
                 logging.debug('Team {} already reported'.format(team))
                 continue
 
-            if self._is_time_to_send_summary(bot, team_config['report_by']):
+            is_reportable = self.is_reportable(bot, today)
+            if not is_reportable:
+                logging.debug('Today is not reportable (weekend or holiday)')
+
+                report_holiday = (
+                    self.is_holiday(bot, today) and
+                    not self.is_too_early_to_ask(
+                        bot, team_config['ask_earliest']
+                    )
+                )
+                if report_holiday:
+                    team_report['reported_at'] = datetime.utcnow()
+                    holiday = bot.plugin_config.get('holidays', []).get(today)
+                    bot.fast_queue.append(
+                        SendMessage(
+                            to=team_config['post_summary_to'],
+                            text='No Standup Today',
+                            attachments=[
+                                {
+                                    'color': '#f00',
+                                    'title': holiday,
+                                    'text': ':tada:'
+                                }
+                            ]
+                        )
+                    )
+                return
+
+            if self.is_time_to_send_summary(bot, team_config['report_by']):
                 logging.debug('It is time to send summary for {}'.format(team))
                 bot.fast_queue.append(SendReportSummary(team))
                 continue
 
-            if self._is_too_early_to_ask(bot, team_config['ask_earliest']):
+            if self.is_too_early_to_ask(bot, team_config['ask_earliest']):
                 logging.debug('Too early to ask people on {}'.format(team))
                 continue
 
@@ -317,11 +346,6 @@ class ReadMessage(Task):
             bot.fast_queue.append(
                 ReadStatusMessage(self.data)
             )
-        else:
-            # this is not a direct message, this is message to channel
-            # where bot lives from somebody, we can look at words and
-            # reach somehow
-            text = self.data['text']
 
 
 class ReadStatusMessage(Task):
