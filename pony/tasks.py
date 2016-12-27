@@ -241,7 +241,7 @@ class CheckReports(Task):
                             ]
                         )
                     )
-                return
+                continue
 
             if self.is_time_to_send_summary(bot, team_config['report_by']):
                 logging.debug('It is time to send summary for {}'.format(team))
