@@ -9,7 +9,8 @@ class Dictionary(object):
     PLEASE_REPORT = (
         "Hey, just wanted to ask your current status. How it is going?",
 
-        "Psst. I know, you hate it. But I have to ask. Any blockers?",
+        "Psst. I know, you hate it. But I have to ask. What is your status? "
+        "Anything you want to share with the team? Few words.",
 
         "Hi. Ponies don't have to report. However people made us "
         "to ask other people to. How are you doing today? Give me few words "
@@ -86,6 +87,9 @@ class Dictionary(object):
         "Okay",
         "No way, that's a lot!",
         "Noted that :white_check_mark:",
+        "Sounds good. Thanks!",
+        ":heavy_check_mark: Gotcha.",
+        "Fantastic! :fire:",
     )
 
     @staticmethod
