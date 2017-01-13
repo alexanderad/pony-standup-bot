@@ -239,3 +239,60 @@ class CheckReportsTest(BaseTest):
                     date(2016, 12, 1)
                 ]['dev_team1'].get('reported_at')
             )
+
+
+class ReadMessageTest(BaseTest):
+    def setUp(self):
+        super(ReadMessageTest, self).setUp()
+        self.bot.storage.set('ims', [])
+
+    def test_is_not_a_bot_message(self):
+        task = pony.tasks.ReadMessage({})
+        self.assertFalse(task.is_bot_message())
+
+    def test_is_bot_message(self):
+        task = pony.tasks.ReadMessage({'bot_id': '_bot_id'})
+        self.assertTrue(task.is_bot_message())
+
+    def test_is_not_a_direct_message(self):
+        task = pony.tasks.ReadMessage({
+            'type': 'message',
+            'user': '_user_id',
+            'channel': '_not_im_channel'
+        })
+        self.assertFalse(task.is_direct_message(self.bot))
+
+    def test_is_direct_message(self):
+        self.bot.storage.set('ims', [{'id': '_im_channel_id'}])
+
+        task = pony.tasks.ReadMessage({
+            'type': 'message',
+            'user': '_user_id',
+            'channel': '_im_channel_id'
+        })
+        self.assertTrue(task.is_direct_message(self.bot))
+
+    def test_execute_empty_payload(self):
+        task = pony.tasks.ReadMessage({})
+        self.assertIsNone(task.execute(self.bot, self.slack))
+
+    def test_execute_skips_bot_messages(self):
+        task = pony.tasks.ReadMessage({'bot_id': '_bot_id'})
+        self.assertIsNone(task.execute(self.bot, self.slack))
+
+    def test_execute_reads_status_message(self):
+        self.bot.storage.set('ims', [{'id': '_im_channel_id'}])
+        data = {
+            'type': 'message',
+            'user': '_user_id',
+            'channel': '_im_channel_id',
+            'text': '_text'
+        }
+
+        task = pony.tasks.ReadMessage(data)
+
+        self.assertIsNone(task.execute(self.bot, self.slack))
+
+        read_message_task = self.bot.fast_queue.pop()
+        self.assertIsInstance(read_message_task, pony.tasks.ReadStatusMessage)
+        self.assertDictEqual(read_message_task.data, data)

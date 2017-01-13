@@ -315,7 +315,7 @@ class ReadMessage(Task):
     def is_direct_message(self, bot):
         """Checks if this is a direct message."""
         return all([
-            self.data.get('type') == 'message',
+            self.data.get('type', None) == 'message',
             'user' in self.data,
             'subtype' not in self.data,
             any([
@@ -332,7 +332,12 @@ class ReadMessage(Task):
         is_direct_message = self.is_direct_message(bot)
         is_bot_message = self.is_bot_message()
 
-        user_id = self.data['user']
+        user_id = self.data.get('user', None)
+
+        if user_id is None:
+            logging.debug(
+                u'Skipping message with no user "{}"'.format(self.data))
+            return
 
         if is_bot_message:
             logging.debug(

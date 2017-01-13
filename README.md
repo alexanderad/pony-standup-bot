@@ -18,3 +18,8 @@ Tiny Standup Bot for Slack
 * create a virtual environment with `virtualenv .env`
 * install requirements `pip install -r requirements.txt`
 * run `rtmbot --config pony.conf`
+
+### Testing
+Testing is easy, assuming you have [tox](https://pypi.python.org/pypi/tox) installed:
+
+    $ tox

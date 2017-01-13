@@ -17,7 +17,7 @@ class Dictionary(object):
         "to share with the team.",
 
         "Amazing day, dear. I have a questionnaire here. Sponsored by your "
-        "team. How it is going on your side today?",
+        "team. How it is going on your side today? Just few words.",
 
         "Dear, I'm here to ask you about your status for the team. Could "
         "you be so kind to share few words on what you are working on now?",
@@ -39,7 +39,7 @@ class Dictionary(object):
         "your status with the team? Few words.",
 
         "Good morning. Your beloved pony is here again to ask your daily "
-        "status for the team. How are you doing today?",
+        "status for the team. How are you doing today, anything to share?",
 
         "Hello, dear. Pony here. What's your story today? Anything to share "
         "with the team?",
@@ -56,9 +56,6 @@ class Dictionary(object):
 
         "Another day, another question. Oh, wait, question is the same. Your "
         "status is all I need to know. It's not me, it is for the team.",
-
-        "Good day. Having English breakfast while pony asks people their "
-        "status for the team dear? How do you do?",
 
         "Can't stop being bossy and asking people on the team their daily "
         "status. What do you have to say?",
@@ -78,7 +75,7 @@ class Dictionary(object):
         "You are so hardworking today. Thanks.",
         "Love that. Thanks :+1:",
         "I see. That's intense! Thanks.",
-        "Ah, okay. Thanks a lot.",
+        "Ah, okay. Thanks a lot. <3",
         "Sounds good. Thank you.",
         "Lovely, thanks!",
         "That's a lot. I do not envy you. Thanks, anyway! :+1:",
@@ -90,6 +87,17 @@ class Dictionary(object):
         "Sounds good. Thanks!",
         ":heavy_check_mark: Gotcha.",
         "Fantastic! :fire:",
+        "Good",
+        "Thanks for sharing! :star2:",
+        "Love that! <3",
+        "Fascinating :sparkles:",
+        "Perfect",
+        ":bow:",
+        "Thanks! :tropical_fish:",
+        "Nice! :muscle:",
+        ":cool:",
+        "Great, thanks."
+        "OK",
     )
 
     @staticmethod
