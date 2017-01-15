@@ -328,36 +328,61 @@ class ReadMessage(Task):
         """Checks if it is a bot message."""
         return 'bot_id' in self.data
 
+    def is_hidden_message(self):
+        """Checks if it is a hidden message."""
+        return self.data.get('hidden', False)
+
+    def is_message_edit(self):
+        return self.data.get('subtype', None) == 'message_changed'
+
     def execute(self, bot, slack):
-        is_direct_message = self.is_direct_message(bot)
-        is_bot_message = self.is_bot_message()
+        logging.debug(u'Message event "{}"'.format(self.data))
 
-        user_id = self.data.get('user', None)
+        if self.is_hidden_message():
+            if self.is_message_edit():
+                bot.fast_queue.append(
+                    ReadMessageEdit(self.data)
+                )
 
-        if user_id is None:
-            logging.debug(
-                u'Skipping message with no user "{}"'.format(self.data))
+        if self.is_bot_message():
             return
 
-        if is_bot_message:
-            logging.debug(
-                'Skipping bot message from {}'.format(self.data['bot_id']))
-            return
-
-        logging.info(u'User {} says "{}"'.format(user_id, self.data['text']))
-
-        if is_direct_message:
+        if self.is_direct_message(bot):
             # in direct messages we only expect status messages
             bot.fast_queue.append(
                 ReadStatusMessage(self.data)
             )
 
 
-class ReadStatusMessage(Task):
-    """Reads a status report from a user."""
-    def __init__(self, data):
-        self.data = data
+class ReadMessageEdit(ReadMessage):
+    """Reads a message edit."""
+    def execute(self, bot, slack):
+        new_message = self.data['message']
+        previous_message = self.data['previous_message']
+        user_id = new_message['user']
 
+        # see if we have previous message as report and propagate the edit
+        today = datetime.utcnow().date()
+        report = bot.storage.get('report')
+        teams = bot.plugin_config['active_teams']
+
+        for team in teams:
+            # assume everything: report does not exist, team has not yet
+            # reported today, user is not a part of the team in question
+            user_report = report.get(today, {}).get(team, {}).get(user_id, {})
+            if not user_report:
+                continue
+
+            if previous_message['text'] in user_report['report']:
+                msg_idx = user_report['report'].index(previous_message['text'])
+                user_report['report'][msg_idx] = new_message['text']
+                user_report['edited_at'] = datetime.utcnow()
+                logging.info('Applied message edit for {} on {}'.format(
+                    user_id, team))
+
+
+class ReadStatusMessage(ReadMessage):
+    """Reads a status report from a user."""
     def execute(self, bot, slack):
         user_id = self.data['user']
 
@@ -380,8 +405,8 @@ class ReadStatusMessage(Task):
             is_first_line = len(user_report['report']) == 0
             user_report['report'].append(self.data['text'])
 
-        # give user extra seconds to add more lines in context of this lock
-        bot.lock_user(user_id, teams, expire_in=90)
+        # give user extra 5 minutes to add more lines in context of this lock
+        bot.lock_user(user_id, teams, expire_in=300)
         if is_first_line:
             bot.fast_queue.append(
                 SendMessage(

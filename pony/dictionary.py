@@ -60,7 +60,7 @@ class Dictionary(object):
         "Can't stop being bossy and asking people on the team their daily "
         "status. What do you have to say?",
 
-        "Hi. That's a team check in. How did it go today?"
+        "Hi. That's a team check in. How did it go today?",
     )
     THANKS = (
         "Thanks! :+1:",
@@ -96,7 +96,7 @@ class Dictionary(object):
         "Thanks! :tropical_fish:",
         "Nice! :muscle:",
         ":cool:",
-        "Great, thanks."
+        "Great, thanks.",
         "OK",
     )
 

@@ -296,3 +296,112 @@ class ReadMessageTest(BaseTest):
         read_message_task = self.bot.fast_queue.pop()
         self.assertIsInstance(read_message_task, pony.tasks.ReadStatusMessage)
         self.assertDictEqual(read_message_task.data, data)
+
+
+class ReadMessageEditTest(BaseTest):
+    def setUp(self):
+        super(ReadMessageEditTest, self).setUp()
+        self.bot.plugin_config = {
+            'active_teams': ['dev_team1', 'dev_team2'],
+        }
+        self.bot.storage.set('report', {})
+        self.data = {
+            'event_ts': '1484475451.173471',
+            'ts': '1484475451.000005',
+            'type': 'message',
+            'hidden': True,
+            'channel': 'D3AV4E6BZ',
+            'subtype': 'message_changed',
+            'message': {
+                'text': 'Worked hard the rest of the day', 'type': 'message',
+                'user': 'U04RVVBAY', 'ts': '1484475444.000003',
+                'edited': {
+                    'user': 'U04RVVBAY',
+                    'ts': '1484475451.000000'
+                }
+            },
+            'previous_message': {
+                'text': 'Left to party afterwards',
+                'type': 'message',
+                'user': 'U04RVVBAY',
+                'ts': '1484475444.000003'
+            }
+        }
+
+    def test_execute_empty_report_or_no_user(self):
+        task = pony.tasks.ReadMessageEdit(self.data)
+        task.execute(self.bot, self.slack)
+
+    def test_execute_single_team_user(self):
+        today = datetime.utcnow().date()
+        self.bot.storage.set('report', {
+            today: {
+                'dev_team1': {
+                    'U04RVVBAY': {
+                        'report': [
+                            'Found and fixed Pony bug',
+                            'Left to party afterwards'
+                        ]
+                    }
+                }
+            }
+        })
+
+        task = pony.tasks.ReadMessageEdit(self.data)
+        task.execute(self.bot, self.slack)
+
+        report = self.bot.storage.get('report')[today]['dev_team1']
+        self.assertIsNotNone(report['U04RVVBAY']['edited_at'])
+        self.assertListEqual(
+            report['U04RVVBAY']['report'],
+            [
+                'Found and fixed Pony bug',
+                'Worked hard the rest of the day'
+            ]
+        )
+
+    def test_execute_multi_team_user(self):
+        today = datetime.utcnow().date()
+        self.bot.storage.set('report', {
+            today: {
+                'dev_team1': {
+                    'U04RVVBAY': {
+                        'report': [
+                            'Found and fixed Pony bug',
+                            'Left to party afterwards'
+                        ]
+                    }
+                },
+                'dev_team2': {
+                    'U04RVVBAY': {
+                        'report': [
+                            'Found and fixed Pony bug',
+                            'Left to party afterwards'
+                        ]
+                    }
+                }
+            }
+        })
+
+        task = pony.tasks.ReadMessageEdit(self.data)
+        task.execute(self.bot, self.slack)
+
+        report1 = self.bot.storage.get('report')[today]['dev_team1']
+        self.assertIsNotNone(report1['U04RVVBAY']['edited_at'])
+        self.assertListEqual(
+            report1['U04RVVBAY']['report'],
+            [
+                'Found and fixed Pony bug',
+                'Worked hard the rest of the day'
+            ]
+        )
+
+        report2 = self.bot.storage.get('report')[today]['dev_team2']
+        self.assertIsNotNone(report2['U04RVVBAY']['edited_at'])
+        self.assertListEqual(
+            report2['U04RVVBAY']['report'],
+            [
+                'Found and fixed Pony bug',
+                'Worked hard the rest of the day'
+            ]
+        )
