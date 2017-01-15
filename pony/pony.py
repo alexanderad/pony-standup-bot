@@ -1,4 +1,5 @@
 # coding=utf-8
+import time
 import logging
 import collections
 
@@ -54,6 +55,11 @@ class StandupPonyPlugin(Plugin):
 
         return False
 
+    def send_typing(self, to):
+        self.slack_client.server.send_to_websocket(
+            dict(type='typing', channel=to))
+        time.sleep(0.75)
+
     def lock_user(self, user_id, team, expire_in):
         lock_key = '{}_lock'.format(user_id)
         self.storage.set(lock_key, team, expire_in=expire_in)
@@ -96,7 +102,7 @@ class StandupPonyPlugin(Plugin):
             WorldTick(
                 bot=self,
                 queue=self.fast_queue,
-                interval=0.5
+                interval=0.1
             )
         )
         logging.info('Registered fast queue')

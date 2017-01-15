@@ -14,7 +14,8 @@ class BaseTest(unittest.TestCase):
         self.bot = StandupPonyPlugin(
             plugin_config={
                 'db_file': ''
-            }
+            },
+            slack_client=flexmock(server=flexmock())
         )
         self.slack = flexmock()
 
@@ -22,6 +23,10 @@ class BaseTest(unittest.TestCase):
 class SendMessageTest(BaseTest):
     def test_execute(self):
         task = pony.tasks.SendMessage('_to', '_text', [1, 2, 3])
+
+        (flexmock(self.bot.slack_client.server)
+         .should_receive('send_to_websocket')
+         .with_args(dict(type='typing', channel='_to')))
 
         (flexmock(self.slack)
          .should_receive('api_call')
