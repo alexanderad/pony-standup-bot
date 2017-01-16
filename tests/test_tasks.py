@@ -232,7 +232,8 @@ class CheckReportsTest(BaseTest):
             task = self.bot.fast_queue.pop()
             self.assertIsInstance(task, pony.tasks.SendMessage)
             self.assertEqual(task.to, '#dev-team')
-            self.assertEqual(task.text, 'No Standup Today')
+            self.assertIn('No Standup Today', task.text)
+            self.assertIn('Romanian National Day', task.text)
 
             # this is sent only once (report is marked reported)
             self.task.execute(self.bot, self.slack)
@@ -410,3 +411,43 @@ class ReadMessageEditTest(BaseTest):
                 'Worked hard the rest of the day'
             ]
         )
+
+
+class SendReportSummaryTest(BaseTest):
+    def test_get_user_avatar_is_failsafe(self):
+        (flexmock(self.slack)
+         .should_receive('api_call')
+         .with_args('users.list')
+         .and_return(dict(members=[])))
+
+        task = pony.tasks.SendReportSummary('_dummy_team')
+        self.assertIsNone(task.get_user_avatar(self.slack, '_user_id'))
+
+    def test_get_user_avatar(self):
+        (flexmock(self.slack)
+         .should_receive('api_call')
+         .with_args('users.list')
+         .and_return({
+            'members': [{
+                'id': '_user_id',
+                'profile': {
+                    'image_192': '_image_192_url'
+                }
+            }]
+        }))
+
+        task = pony.tasks.SendReportSummary('_dummy_team')
+        self.assertEqual(
+            task.get_user_avatar(self.slack, '_user_id'), '_image_192_url')
+
+    def test_get_user_avatar_lazy_loads_profiles(self):
+        (flexmock(self.slack)
+         .should_receive('api_call')
+         .with_args('users.list')
+         .and_return(dict(members=[]))
+         .times(1))
+
+        task = pony.tasks.SendReportSummary('_dummy_team')
+        self.assertIsNone(task.get_user_avatar(self.slack, '_user_id'))
+        self.assertIsNone(task.get_user_avatar(self.slack, '_user_id'))
+        self.assertIsNone(task.get_user_avatar(self.slack, '_user_id'))

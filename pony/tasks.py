@@ -80,6 +80,16 @@ class SendReportSummary(Task):
     """Sends a report summary to team channel."""
     def __init__(self, team):
         self.team = team
+        self.user_profiles = None
+
+    def get_user_avatar(self, slack, user_id):
+        # lazy load profiles once
+        if self.user_profiles is None:
+            self.user_profiles = slack.api_call('users.list')['members']
+
+        for user in self.user_profiles:
+            if user['id'] == user_id:
+                return user['profile']['image_192']
 
     def execute(self, bot, slack):
         report = bot.storage.get('report')
@@ -122,6 +132,7 @@ class SendReportSummary(Task):
             reports.append({
                 'color': color,
                 'title': full_name,
+                'thumb_url': self.get_user_avatar(slack, user_id),
                 'text': u'\n'.join(data['report'])[:1024]
             })
 
@@ -244,14 +255,10 @@ class CheckReports(Task):
                     bot.fast_queue.append(
                         SendMessage(
                             to=team_config['post_summary_to'],
-                            text='No Standup Today',
-                            attachments=[
-                                {
-                                    'color': '#f00',
-                                    'title': holiday,
-                                    'text': ':tada:'
-                                }
-                            ]
+                            text='\n'.join([
+                                'No Standup Today :tada:',
+                                holiday
+                            ])
                         )
                     )
                 continue
