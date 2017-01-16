@@ -1,7 +1,9 @@
 # coding=utf-8
 import logging
+import calendar
 import dateutil.tz
 import dateutil.parser
+
 from datetime import datetime, timedelta
 from collections import defaultdict
 
@@ -133,6 +135,7 @@ class SendReportSummary(Task):
                 'color': color,
                 'title': full_name,
                 'thumb_url': self.get_user_avatar(slack, user_id),
+                'ts': calendar.timegm(data['reported_at'].timetuple()),
                 'text': u'\n'.join(data['report'])[:1024]
             })
 
