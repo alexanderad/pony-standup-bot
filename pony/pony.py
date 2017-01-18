@@ -102,7 +102,7 @@ class StandupPonyPlugin(Plugin):
             WorldTick(
                 bot=self,
                 queue=self.fast_queue,
-                interval=0.1
+                interval=0.25
             )
         )
         logging.info('Registered fast queue')
