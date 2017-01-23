@@ -32,16 +32,15 @@ class SendMessage(Task):
         return to
 
     def execute(self, bot, slack):
-        # check if there is IM channel id for recipient
-        channel = self.get_im_channel(bot, self.to)
+        im_channel = self.get_im_channel(bot, self.to)
 
-        logging.info(u'Sending message "{}" to {} ({})'.format(
-            self.text, self.to, channel))
+        logging.info(u'Sending message "{}" to {} (typing event to {})'.format(
+            self.text, self.to, im_channel))
 
-        bot.send_typing(to=channel)
+        bot.send_typing(to=im_channel)
         slack.api_call(
             'chat.postMessage',
-            channel=channel,
+            channel=self.to,
             text=self.text,
             attachments=self.attachments,
             as_user=True
