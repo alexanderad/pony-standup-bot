@@ -51,10 +51,7 @@ class Storage(object):
         with open(self._file_name, 'wb') as f:
             pickle.dump(self._data, f)
 
-        logging.debug(pprint.pformat({
-             key: value for key, value in self._data.items()
-             if key not in ['ims', 'users']
-        }, indent=4))
+        self.debug()
         logging.debug('Flushed db to disk')
 
     def load(self):
@@ -64,3 +61,17 @@ class Storage(object):
         with open(self._file_name, 'rb') as f:
             logging.info('Loaded db from disk')
             return pickle.load(f)
+
+    def debug(self):
+        data = {
+            key: value for key, value in self._data.items()
+            if key not in ['ims', 'users']
+
+        }
+
+        today = datetime.today().date()
+        if 'report' in data and today in data['report']:
+            data['report'] = {today: data['report'][today]}
+
+        logging.debug('Dumping database to stdout (significant bits only)')
+        logging.debug(pprint.pformat(data, indent=4))
