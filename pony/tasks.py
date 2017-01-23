@@ -3,6 +3,7 @@ import logging
 import calendar
 import dateutil.tz
 import dateutil.parser
+import random
 
 from datetime import datetime, timedelta
 from collections import defaultdict
@@ -114,7 +115,10 @@ class SendReportSummary(Task):
             return
 
         reports, offline_users, no_response_users = [], [], []
-        for user_id, data in team_report.items():
+        user_ids = team_report.keys()
+        random.shuffle(user_ids)
+        for user_id in user_ids:
+            data = team_report[user_id]
             user_data = bot.get_user_by_id(user_id)
             if not user_data:
                 logging.error('Unable to find user by id: {}'.format(user_id))
