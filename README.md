@@ -12,12 +12,12 @@ Tiny Standup Bot for Slack
 
 ### Usage
 * [create a bot](https://my.slack.com/services/new/bot) for your team
-* copy `pony.sample.conf` to `pony.conf`
+* copy `pony.sample.yaml` to `pony.yaml`
 * put a token for newly created bot under `SLACK_TOKEN`
 * configure your timezone and set up standup members under `StandupPonyPlugin`
 * create a virtual environment with `virtualenv .env`
 * install requirements `pip install -r requirements.txt`
-* run `rtmbot --config pony.conf`
+* run `rtmbot --config pony.yaml`
 
 ### Testing
 Testing is easy, assuming you have [tox](https://pypi.python.org/pypi/tox) installed:
