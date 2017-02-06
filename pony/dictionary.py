@@ -88,6 +88,7 @@ class Dictionary(object):
         ":heavy_check_mark: Gotcha.",
         "Fantastic! :fire:",
         "Good",
+        "Awesome",
         "Thanks for sharing! :star2:",
         "Love that! <3",
         "Fascinating :sparkles:",
@@ -98,6 +99,8 @@ class Dictionary(object):
         ":cool:",
         "Great, thanks.",
         "OK",
+        "Everything is awesome! :nail_care:",
+        "Foarte bine!",
     )
 
     @staticmethod
