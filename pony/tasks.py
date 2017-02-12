@@ -114,10 +114,10 @@ class SendReportSummary(Task):
             return
 
         reports, offline_users, no_response_users = [], [], []
-        user_ids = team_report.keys()
+        user_ids = team_report['reports'].keys()
         random.shuffle(user_ids)
         for user_id in user_ids:
-            data = team_report[user_id]
+            data = team_report['reports'][user_id]
             user_data = bot.get_user_by_id(user_id)
             if not user_data:
                 logging.error('Unable to find user by id: {}'.format(user_id))
@@ -192,6 +192,17 @@ class CheckReports(Task):
         now = datetime.now(dateutil.tz.tzlocal())
         return now >= report_by
 
+    def is_last_call(self, bot, report_by):
+        tz = dateutil.tz.gettz(bot.plugin_config['timezone'])
+        report_by = dateutil.parser.parse(report_by).replace(tzinfo=tz)
+        last_call = dateutil.parser.parse(bot.plugin_config['last_call'])
+        last_call = timedelta(hours=last_call.hour, minutes=last_call.minute)
+        if not last_call:
+            return
+
+        now = datetime.now(dateutil.tz.tzlocal())
+        return report_by - now < last_call
+
     def is_too_early_to_ask(self, bot, ask_earliest):
         tz = dateutil.tz.gettz(bot.plugin_config['timezone'])
         ask_earliest = dateutil.parser.parse(ask_earliest).replace(tzinfo=tz)
@@ -199,14 +210,14 @@ class CheckReports(Task):
         return now < ask_earliest
 
     def init_empty_report(self, bot, team_config):
-        team_report = dict()
+        team_report = dict(reports={})
         for user in team_config['users']:
             user_data = bot.get_user_by_name(user)
             if not user_data:
                 logging.error('Unable to find user by name {}'.format(user))
                 continue
 
-            team_report[user_data['id']] = {'report': []}
+            team_report['reports'][user_data['id']] = {'report': []}
 
         return team_report
 
@@ -234,7 +245,7 @@ class CheckReports(Task):
 
         teams_by_user = defaultdict(list)
         for team, users_data in report[today].items():
-            for user_id in users_data.keys():
+            for user_id in users_data['reports'].keys():
                 teams_by_user[user_id].append(team)
 
         for team in teams:
@@ -269,44 +280,58 @@ class CheckReports(Task):
                     )
                 continue
 
+            if self.is_too_early_to_ask(bot, team_config['ask_earliest']):
+                logging.debug('Too early to ask people on {}'.format(team))
+                continue
+
             if self.is_time_to_send_summary(bot, team_config['report_by']):
                 logging.debug('It is time to send summary for {}'.format(team))
                 bot.fast_queue.append(SendReportSummary(team))
                 continue
 
-            if self.is_too_early_to_ask(bot, team_config['ask_earliest']):
-                logging.debug('Too early to ask people on {}'.format(team))
-                continue
+            last_call = (
+                self.is_last_call(bot, team_config['report_by'])
+                and team_report.get('last_call_at') is None
+            )
+            if last_call:
+                logging.debug('Sending last call for {}'.format(team))
+                team_report['last_call_at'] = datetime.utcnow()
 
-            for user_id in team_report.keys():
-
-                if team_report[user_id].get('reported_at'):
+            for user_id in team_report['reports'].keys():
+                if team_report['reports'][user_id].get('reported_at'):
                     continue
 
                 bot.fast_queue.append(
-                    AskStatus(teams=teams_by_user[user_id], user_id=user_id)
+                    AskStatus(
+                        teams=teams_by_user[user_id],
+                        user_id=user_id,
+                        last_call=last_call
+                    )
                 )
 
 
 class AskStatus(Task):
     """Asks a single user their status."""
-    def __init__(self, teams, user_id):
+    def __init__(self, teams, user_id, last_call):
         self.teams = teams
         self.user_id = user_id
+        self.last_call = last_call
 
     def execute(self, bot, slack):
         current_lock = bot.get_user_lock(self.user_id)
-        if current_lock:
+
+        skip_user = current_lock and not self.last_call
+        if skip_user:
             logging.debug(
                 'User {} is already locked for {}, will wait for them to '
                 'respond'.format(self.user_id, current_lock))
             return
 
+        today = datetime.utcnow().date()
+        report = bot.storage.get('report')[today]
         if bot.user_is_online(self.user_id):
-            today = datetime.utcnow().date()
-            report = bot.storage.get('report')
             for team in self.teams:
-                report[today][team][self.user_id]['seen_online'] = True
+                report[team]['reports'][self.user_id]['seen_online'] = True
         else:
             logging.debug(
                 'User {} is not online, will try later'.format(self.user_id))
@@ -319,16 +344,23 @@ class AskStatus(Task):
         ).total_seconds()
         bot.lock_user(self.user_id, self.teams, expire_in)
 
-        logging.info('Asked user {} their status for {}'.format(
+        logging.info('Asking user {} their status for {}'.format(
             self.user_id, self.teams))
+
+        phrase = Dictionary.pick(
+            phrases=Dictionary.PLEASE_REPORT,
+            user_id=self.user_id
+        )
+        if self.last_call:
+            phrase = Dictionary.pick(
+                phrases=Dictionary.PLEASE_REPORT_LAST_CALL,
+                user_id=self.user_id
+            )
 
         bot.fast_queue.append(
             SendMessage(
                 to=self.user_id,
-                text=Dictionary.pick(
-                    phrases=Dictionary.PLEASE_REPORT,
-                    user_id=self.user_id
-                )
+                text=phrase
             )
         )
 
@@ -395,7 +427,8 @@ class ReadMessageEdit(ReadMessage):
         for team in teams:
             # assume everything: report does not exist, team has not yet
             # reported today, user is not a part of the team in question
-            user_report = report.get(today, {}).get(team, {}).get(user_id, {})
+            user_report = report.get(
+                today, {}).get(team, {}).get('reports', {}).get(user_id, {})
             if not user_report:
                 continue
 
@@ -426,7 +459,7 @@ class ReadStatusMessage(ReadMessage):
         today = datetime.utcnow().date()
         report, is_first_line = bot.storage.get('report'), False
         for team in teams:
-            user_report = report[today][team][user_id]
+            user_report = report[today][team]['reports'][user_id]
             user_report['reported_at'] = datetime.utcnow()
             is_first_line = len(user_report['report']) == 0
             user_report['report'].append(self.data['text'])

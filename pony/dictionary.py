@@ -5,7 +5,6 @@ from datetime import datetime
 
 class Dictionary(object):
     """Collection of phrases."""
-    # Please report is expected to include team's name. Leave a placeholder.
     PLEASE_REPORT = (
         "Hey, just wanted to ask your current status. How it is going?",
 
@@ -61,6 +60,34 @@ class Dictionary(object):
         "status. What do you have to say?",
 
         "Hi. That's a team check in. How did it go today?",
+    )
+    PLEASE_REPORT_LAST_CALL = (
+        "This is the final boarding call for developers reporting to daily "
+        "standup. Everything is about to happen! :runner:",
+
+        "Pssst! I know you are busy. This happens to me as well. In few "
+        "minutes I'm going to report daily status. Wanna be part of it?",
+
+        "Busy day, eh? Maybe you have a few seconds to report your daily "
+        "status, I'm about sending the final version of it! :clock430:",
+
+        "You know that feeling when you ask somebody something "
+        "but don't get any response back? That's awful. Wuuuf. Anyway I'm "
+        "going to report daily status in a few minutes, would like to see you "
+        "a part of it. ",
+
+        "Ladies and gentlemen, captain speaking. We are about to report "
+        "daily status, this is a kindly reminder for ya! :helicopter:",
+
+        "Dear, this is just a kindly reminder for you to report your daily "
+        "status! :bee:",
+
+        "Everything is awesome, but you totally forgot about me! "
+        "I'm reporting daily status in few moments, wanna join the "
+        "crowd? :family:",
+
+        "Busy like a bee? Just another question: wanna be a part of daily "
+        "summary? One is soon to be sent out! :timer_clock:",
     )
     THANKS = (
         "Thanks! :+1:",

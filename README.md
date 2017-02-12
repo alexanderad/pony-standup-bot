@@ -9,6 +9,7 @@ Tiny Standup Bot for Slack
 * private daily status collection
 * public standup report summary on schedule
 * understands holidays and weekends
+* friendly reminders
 
 ### Usage
 * [create a bot](https://my.slack.com/services/new/bot) for your team

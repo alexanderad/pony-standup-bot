@@ -1,0 +1,35 @@
+DEBUG: True
+LOGFILE: "pony.log"
+SLACK_TOKEN: "xoxb-112990344487-tcgd9Yqd2lZOXmGIK9IQ8CZJ"
+ACTIVE_PLUGINS:
+    - pony.pony.StandupPonyPlugin
+
+StandupPonyPlugin:
+    db_file: "pony.db"
+    timezone: "Europe/Bucharest"
+    last_call_reminder: "00:05"
+    holidays:
+        2016-12-23: "iMedicare Day Off"
+        2016-12-26: "Christmas Second Day"
+        2016-12-30: "iMedicare Day Off"
+        2017-01-02: "Day After the New Year"
+        2017-01-24: "Romania: Unification Day"
+        2017-04-17: "Orthodox Easter Monday"
+        2017-05-01: "Romanina: Labour Day"
+        2017-07-04: "USA: Independence Day"
+        2017-11-23: "USA: Thanksgiving"
+        2017-12-01: "Romania: National Day"
+        2017-12-25: "Christmas"
+        2017-12-26: "Christmas Second Day"
+
+    active_teams:
+        - test_dev_team1
+
+    test_dev_team1:
+        name: "Test Team"
+        post_summary_to: "#test-channel"
+        report_by: "21:32"
+        ask_earliest: "11:00"
+        users:
+            - "@sasha"
+
