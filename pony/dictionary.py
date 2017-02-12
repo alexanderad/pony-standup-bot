@@ -8,33 +8,30 @@ class Dictionary(object):
     PLEASE_REPORT = (
         "Hey, just wanted to ask your current status. How it is going?",
 
-        "Psst. I know, you hate it. But I have to ask. What is your status? "
-        "Anything you want to share with the team? Few words.",
+        "Psst. I know you don't like it. But I have to ask. "
+        "What is your status? Anything you want to share with the team? "
+        "Few words.",
 
-        "Hi. Ponies don't have to report. However people made us "
+        "Hi. Ponies don't have to report. However, people made us "
         "to ask other people to. How are you doing today? Give me few words "
         "to share with the team.",
 
         "Amazing day, dear. I have a questionnaire here. Sponsored by your "
-        "team. How it is going on your side today? Just few words.",
+        "team. How is it going on your side today? Just a few words.",
 
         "Dear, I'm here to ask you about your status for the team. Could "
         "you be so kind to share few words on what you are working on now?",
 
         "Hello, it's me again. How are you doing today? Your team will be "
-        "excited to hear. I need just few words from you.",
+        "excited to hear. I need just a few words from you.",
 
         "Heya. Just asked all the team members. You are the last one. How's "
         "your day? Anything you want to share with the team?",
 
-        "Hi there! Amazing day. Oh, wait, is that word banned on your team? "
-        "Nevermind. I'm here to ask you your daily status update for the "
-        "team. Would you mind sharing few words?",
-
         "Good morning, dear. Just noticed you are online, decided to ask you "
         "your current status for the team. Few words to share?",
 
-        "Dear, I apologise for the inconvenience. Would you mind sharing "
+        "Dear, I apologize for the inconvenience. Would you mind sharing "
         "your status with the team? Few words.",
 
         "Good morning. Your beloved pony is here again to ask your daily "
@@ -53,8 +50,8 @@ class Dictionary(object):
         "team. Feels a bit like a date to me. Oh well, what's your today's "
         "status?",
 
-        "Another day, another question. Oh, wait, question is the same. Your "
-        "status is all I need to know. It's not me, it is for the team.",
+        "Another day, another question. Oh, wait, the question is the same. "
+        "Your status is all I need to know. It's not me, it is for the team.",
 
         "Can't stop being bossy and asking people on the team their daily "
         "status. What do you have to say?",
