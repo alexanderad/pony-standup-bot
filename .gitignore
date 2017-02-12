@@ -55,6 +55,7 @@ venv/
 ENV/
 
 # also
-*.db
-pony.conf
+pony.db
+pony.yaml
+pony.log
 .idea
