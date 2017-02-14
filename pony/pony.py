@@ -93,7 +93,7 @@ class StandupPonyPlugin(Plugin):
             WorldTick(
                 bot=self,
                 queue=self.slow_queue,
-                interval=5 * 60
+                interval=2 * 60
             )
         )
         logging.info('Registered slow queue')
