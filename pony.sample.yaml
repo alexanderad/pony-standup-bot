@@ -7,7 +7,7 @@ ACTIVE_PLUGINS:
 StandupPonyPlugin:
     db_file: "pony.db"
     timezone: "Europe/Bucharest"
-    last_call: "5 minutes"
+    last_call: "15 minutes"
     holidays:
         2016-12-26: "Christmas Second Day"
         2017-04-17: "Orthodox Easter Monday"

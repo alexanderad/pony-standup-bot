@@ -55,7 +55,7 @@ class StandupPonyPlugin(Plugin):
 
         return False
 
-    def send_typing(self, to, over_time=2):
+    def send_typing(self, to, over_time=1.25):
         time.sleep(over_time * 0.25)
         self.slack_client.server.send_to_websocket(
             dict(type='typing', channel=to))
