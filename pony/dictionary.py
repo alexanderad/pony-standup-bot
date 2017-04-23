@@ -115,9 +115,11 @@ class Dictionary(object):
         "Awesome",
         "Thanks for sharing! :star2:",
         "Love that! <3",
+        "That's great! :+1:",
         "Fascinating :sparkles:",
         "Perfect",
-        ":bow:",
+        "Terrific!",
+        "Noted that :bow:",
         "Thanks! :tropical_fish:",
         "Nice! :muscle:",
         ":cool:",
@@ -125,6 +127,7 @@ class Dictionary(object):
         "OK",
         "Everything is awesome! :nail_care:",
         "Foarte bine!",
+        "Incredible. Thanks.",
     )
 
     @staticmethod

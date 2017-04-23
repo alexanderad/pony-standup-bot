@@ -15,13 +15,13 @@ class UpdateUserListTest(BaseTest):
          .with_args('users.list')
          .and_return(dict(
             members=[
-                {'user': '_id1', 'deleted': False},
-                {'user': '_id2', 'deleted': True},
+                {'id': '_id1', 'deleted': False},
+                {'id': '_id2', 'deleted': True},
             ]
         )))
 
         task.execute(self.bot, self.slack)
         self.assertEqual(
             self.bot.storage.get('users'),
-            [{'user': '_id1', 'deleted': False}]
+            [{'id': '_id1', 'deleted': False}]
         )

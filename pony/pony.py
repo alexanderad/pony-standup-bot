@@ -49,9 +49,9 @@ class StandupPonyPlugin(Plugin):
                 return user
 
     def user_is_online(self, user_id):
-        data = self.slack_client.api_call('users.getPresence', user=user_id)
-        if data['ok']:
-            return data['presence'] == 'active'
+        user = self.get_user_by_id(user_id)
+        if user is not None and user.get('presence') == 'active':
+            return True
 
         return False
 
@@ -74,18 +74,11 @@ class StandupPonyPlugin(Plugin):
         self.fast_queue.append(tasks.ReadMessage(data=data))
 
     def process_im_created(self, data):
-        logging.info('IM created for user {}'.format(data.get('user')))
         self.fast_queue.append(tasks.UpdateIMList())
 
-    def process_user_typing(self, data):
-        logging.info('User {} is typing to channel {}'.format(
-            data.get('user'), data.get('channel')
-        ))
-
     def process_presence_change(self, data):
-        logging.info('User {} is now {}'.format(
-            data.get('user'), data.get('presence')
-        ))
+        self.fast_queue.append(tasks.ProcessPresenceChange(
+            data.get('user'), data.get('presence')))
 
     def register_jobs(self):
         # slow queue, some minutes between runs (slow world queue)

@@ -480,3 +480,14 @@ class ReadStatusMessage(ReadMessage):
             bot.fast_queue.append(
                 SendMessage(to=user_id, text="Ok, I'll add that too.")
             )
+
+
+class ProcessPresenceChange(Task):
+    def __init__(self, user_id, presence):
+        self.user_id = user_id
+        self.presence = presence
+
+    def execute(self, bot, slack):
+        user = bot.get_user_by_id(self.user_id)
+        if user is not None:
+            user['presence'] = self.presence
