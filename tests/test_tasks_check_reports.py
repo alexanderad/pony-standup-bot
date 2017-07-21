@@ -35,6 +35,13 @@ class CheckReportsTest(BaseTest):
          .with_args('@sasha')
          .and_return({'id': '_sasha_id'}))
 
+        # check reports might call the UserList update
+        # but we are not interested in that in scope of this test
+        (flexmock(self.slack)
+         .should_receive('api_call')
+         .with_args('users.list', presence=1)
+         .and_return({'members': []}))
+
     def test_is_weekend(self):
         saturday = date(2016, 12, 24)
         sunday = date(2016, 12, 25)

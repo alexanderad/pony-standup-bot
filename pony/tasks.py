@@ -51,8 +51,9 @@ class UpdateUserList(Task):
     """Updates team user list."""
     def execute(self, bot, slack):
         logging.info('Updating user list')
+        user_list = slack.api_call('users.list', presence=1)
         users = [
-            user for user in slack.api_call('users.list')['members']
+            user for user in user_list['members']
             if not user['deleted']
         ]
 
@@ -229,6 +230,8 @@ class CheckReports(Task):
 
         report = bot.storage.get('report', {})
         if today not in report:
+            UpdateUserList().execute(bot, slack)
+
             logging.info('Initializing empty report for {}'.format(today))
             report[today] = dict()
 

@@ -12,7 +12,7 @@ class UpdateUserListTest(BaseTest):
 
         (flexmock(self.slack)
          .should_receive('api_call')
-         .with_args('users.list')
+         .with_args('users.list', presence=1)
          .and_return(dict(
             members=[
                 {'id': '_id1', 'deleted': False},
