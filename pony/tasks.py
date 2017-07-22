@@ -3,7 +3,6 @@ import logging
 import calendar
 import dateutil.tz
 import dateutil.parser
-import random
 
 from datetime import datetime, timedelta
 from collections import defaultdict
@@ -115,10 +114,15 @@ class SendReportSummary(Task):
             return
 
         reports, offline_users, no_response_users = [], [], []
-        user_ids = team_report['reports'].keys()
-        random.shuffle(user_ids)
+
+        user_ids = sorted(
+            team_report['reports'].keys(),
+            key=lambda user_id: team_report['reports'][user_id].get(
+                'department')
+        )
+
         for user_id in user_ids:
-            data = team_report['reports'][user_id]
+            report_data = team_report['reports'][user_id]
             user_data = bot.get_user_by_id(user_id)
             if not user_data:
                 logging.error('Unable to find user by id: {}'.format(user_id))
@@ -127,21 +131,25 @@ class SendReportSummary(Task):
             full_name = user_data['profile'].get('real_name')
             color = '#{}'.format(user_data.get('color'))
 
-            if not data.get('seen_online'):
+            if not report_data.get('seen_online'):
                 offline_users.append(full_name)
                 continue
 
-            if not data.get('reported_at'):
+            if not report_data.get('reported_at'):
                 no_response_users.append(full_name)
                 continue
 
-            reports.append({
+            user_report = {
                 'color': color,
                 'title': full_name,
                 'thumb_url': self.get_user_avatar(slack, user_id),
-                'ts': calendar.timegm(data['reported_at'].timetuple()),
-                'text': u'\n'.join(data['report'])[:1024]
-            })
+                'ts': calendar.timegm(report_data['reported_at'].timetuple()),
+                'text': u'\n'.join(report_data['report'])[:1024]
+            }
+            if report_data.get('department'):
+                user_report['footer'] = report_data['department']
+
+            reports.append(user_report)
 
         if no_response_users:
             reports.append({
@@ -212,13 +220,21 @@ class CheckReports(Task):
 
     def init_empty_report(self, bot, team_config):
         team_report = dict(reports={})
-        for user in team_config['users']:
+        for user_item in team_config['users']:
+            if isinstance(user_item, dict):
+                user, department = user_item.items().pop()
+            else:
+                user, department = user_item, None
+
             user_data = bot.get_user_by_name(user)
             if not user_data:
                 logging.error('Unable to find user by name {}'.format(user))
                 continue
 
-            team_report['reports'][user_data['id']] = {'report': []}
+            team_report['reports'][user_data['id']] = {
+                'department': department,
+                'report': []
+            }
 
         return team_report
 

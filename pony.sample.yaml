@@ -17,23 +17,24 @@ StandupPonyPlugin:
         2017-12-26: "Christmas Second Day"
 
     active_teams:
-        - dev_team1
-        - dev_team2
+        - team1
+        - team2
 
-    dev_team1:
+    team1:
         name: "Team One"
         post_summary_to: "#team-one"
         ask_earliest: "09:00"
         report_by: "12:01"
         users:
-            - "@sasha"
             - "@tony"
+            - "@sasha": Dev Department
 
-    dev_team2:
+    team2:
         name: "Test Two"
         post_summary_to: "#team-two"
         ask_earliest: "09:00"
         report_by: "12:15"
         users:
             - "@tony"
-            - "@andy"
+            - "@andy": Dev Department
+            - "@alexandru": Design

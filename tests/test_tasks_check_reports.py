@@ -90,7 +90,28 @@ class CheckReportsTest(BaseTest):
             {
                 'reports': {
                     '_sasha_id': {
-                        'report': []
+                        'report': [],
+                        'department': None
+                    }
+                }
+            }
+        )
+
+    def test_init_report_on_config_with_departments(self):
+        self.bot.plugin_config['dev_team1']['users'] = [
+            {'@sasha': 'Dev Department'}
+        ]
+
+        report = self.task.init_empty_report(
+            self.bot, self.bot.plugin_config['dev_team1'])
+
+        self.assertDictEqual(
+            report,
+            {
+                'reports': {
+                    '_sasha_id': {
+                        'report': [],
+                        'department': 'Dev Department'
                     }
                 }
             }
