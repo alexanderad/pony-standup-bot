@@ -118,7 +118,8 @@ class SendReportSummary(Task):
         user_ids = sorted(
             team_report['reports'].keys(),
             key=lambda user_id: team_report['reports'][user_id].get(
-                'department')
+                'department'
+            )
         )
 
         for user_id in user_ids:
