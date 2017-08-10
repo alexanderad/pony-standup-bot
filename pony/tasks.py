@@ -115,12 +115,11 @@ class SendReportSummary(Task):
 
         reports, offline_users, no_response_users = [], [], []
 
-        user_ids = sorted(
-            team_report['reports'].keys(),
-            key=lambda user_id: team_report['reports'][user_id].get(
-                'department'
-            )
-        )
+        # report in order of appearance in config
+        user_ids = [
+            user.keys()[0] if isinstance(user, dict) else user
+            for user in team_config['users']
+        ]
 
         for user_id in user_ids:
             report_data = team_report['reports'][user_id]

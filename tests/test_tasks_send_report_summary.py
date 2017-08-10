@@ -96,6 +96,7 @@ class SendReportSummaryTest(BaseTest):
         self.assertEqual(len(self.bot.fast_queue), 0)
 
     def test_execute_user_not_seen_online(self):
+        self.bot.plugin_config['_dummy_team']['users'] = ['_user_id']
         self.bot.storage.set('report', {
             datetime.utcnow().date(): {
                 '_dummy_team': {
@@ -121,6 +122,7 @@ class SendReportSummaryTest(BaseTest):
         )
 
     def test_execute_user_returned_no_response(self):
+        self.bot.plugin_config['_dummy_team']['users'] = ['_user_id']
         self.bot.storage.set('report', {
             datetime.utcnow().date(): {
                 '_dummy_team': {
@@ -146,6 +148,7 @@ class SendReportSummaryTest(BaseTest):
         )
 
     def test_execute(self):
+        self.bot.plugin_config['_dummy_team']['users'] = ['_user_id']
         self.bot.storage.set('report', {
             datetime.utcnow().date(): {
                 '_dummy_team': {
@@ -184,6 +187,7 @@ class SendReportSummaryTest(BaseTest):
         self.assertIsNotNone(report_line['ts'])
 
     def test_execute_when_user_has_department_assigned(self):
+        self.bot.plugin_config['_dummy_team']['users'] = ['_user_id']
         self.bot.storage.set('report', {
             datetime.utcnow().date(): {
                 '_dummy_team': {
@@ -215,90 +219,3 @@ class SendReportSummaryTest(BaseTest):
 
         report_line = report.attachments.pop()
         self.assertEqual(report_line['footer'], 'Dev Department')
-
-    def test_execute_report_with_multiple_departments_ordered(self):
-        (flexmock(self.bot)
-            .should_receive('get_user_by_id')
-            .with_args('_user_id1_dev_d1')
-            .and_return({
-                'id': '_user_id1_dev_d1',
-                'color': 'aabbcc',
-                'profile': {
-                    'real_name': 'Dummy User Dev Dept 1'
-            }
-        }))
-
-        (flexmock(self.bot)
-            .should_receive('get_user_by_id')
-            .with_args('_user_id3')
-            .and_return({
-                'id': '_user_id3',
-                'color': 'aabbcc',
-                'profile': {
-                    'real_name': 'User 3 from Project X'
-            }
-        }))
-
-        (flexmock(self.bot)
-            .should_receive('get_user_by_id')
-            .with_args('_user_id2_no_department')
-            .and_return({
-                'id': '_user_id2_no_department',
-                'color': 'aabbcc',
-                'profile': {
-                    'real_name': 'Dummy User with No Department'
-            }
-        }))
-
-        self.bot.storage.set('report', {
-            datetime.utcnow().date(): {
-                '_dummy_team': {
-                    'reports': {
-                        '_user_id1_dev_d1': {
-                            'seen_online': True,
-                            'department': 'Dev Department 1',
-                            'reported_at': datetime.utcnow(),
-                            'report': [
-                                'line1',
-                                'line2'
-                            ]
-                        },
-                        '_user_id3': {
-                            'seen_online': True,
-                            'department': 'Project X',
-                            'reported_at': datetime.utcnow(),
-                            'report': [
-                                'line1',
-                                'line2'
-                            ]
-                        },
-                        '_user_id2_no_department': {
-                            'seen_online': True,
-                            'department': None,
-                            'reported_at': datetime.utcnow(),
-                            'report': [
-                                'line1',
-                                'line2'
-                            ]
-                        }
-                    }
-                }
-            }
-        })
-
-        task = pony.tasks.SendReportSummary('_dummy_team')
-
-        (flexmock(task)
-         .should_receive('get_user_avatar')
-         .and_return('_dummy_user_avatar_url'))
-
-        self.assertIsNone(task.execute(self.bot, self.slack))
-
-        report = self.bot.fast_queue.pop()
-
-        self.assertEqual(len(report.attachments), 3)
-
-        # sorted on department: no dept, dev, project X
-        self.assertNotIn('footer', report.attachments[0])
-        self.assertEqual(report.attachments[1]['footer'], 'Dev Department 1')
-        self.assertEqual(report.attachments[2]['footer'], 'Project X')
