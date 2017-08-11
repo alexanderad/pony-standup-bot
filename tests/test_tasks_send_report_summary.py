@@ -30,6 +30,17 @@ class SendReportSummaryTest(BaseTest):
             }
         }))
 
+        (flexmock(self.bot)
+            .should_receive('get_user_by_name')
+            .with_args('@user')
+            .and_return({
+            'id': '_user_id',
+            'color': 'aabbcc',
+            'profile': {
+                'real_name': 'Dummy User'
+            }
+        }))
+
     def test_get_user_avatar_is_failsafe(self):
         (flexmock(self.slack)
          .should_receive('api_call')
@@ -96,7 +107,7 @@ class SendReportSummaryTest(BaseTest):
         self.assertEqual(len(self.bot.fast_queue), 0)
 
     def test_execute_user_not_seen_online(self):
-        self.bot.plugin_config['_dummy_team']['users'] = ['_user_id']
+        self.bot.plugin_config['_dummy_team']['users'] = ['@user']
         self.bot.storage.set('report', {
             datetime.utcnow().date(): {
                 '_dummy_team': {
@@ -122,7 +133,7 @@ class SendReportSummaryTest(BaseTest):
         )
 
     def test_execute_user_returned_no_response(self):
-        self.bot.plugin_config['_dummy_team']['users'] = ['_user_id']
+        self.bot.plugin_config['_dummy_team']['users'] = ['@user']
         self.bot.storage.set('report', {
             datetime.utcnow().date(): {
                 '_dummy_team': {
@@ -148,7 +159,7 @@ class SendReportSummaryTest(BaseTest):
         )
 
     def test_execute(self):
-        self.bot.plugin_config['_dummy_team']['users'] = ['_user_id']
+        self.bot.plugin_config['_dummy_team']['users'] = ['@user']
         self.bot.storage.set('report', {
             datetime.utcnow().date(): {
                 '_dummy_team': {
@@ -187,7 +198,7 @@ class SendReportSummaryTest(BaseTest):
         self.assertIsNotNone(report_line['ts'])
 
     def test_execute_when_user_has_department_assigned(self):
-        self.bot.plugin_config['_dummy_team']['users'] = ['_user_id']
+        self.bot.plugin_config['_dummy_team']['users'] = ['@user']
         self.bot.storage.set('report', {
             datetime.utcnow().date(): {
                 '_dummy_team': {

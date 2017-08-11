@@ -116,9 +116,13 @@ class SendReportSummary(Task):
         reports, offline_users, no_response_users = [], [], []
 
         # report in order of appearance in config
-        user_ids = [
+        user_names = [
             user.keys()[0] if isinstance(user, dict) else user
             for user in team_config['users']
+        ]
+        user_ids = [
+            user['id'] for user in
+            filter(None, map(bot.get_user_by_name, user_names))
         ]
 
         for user_id in user_ids:
