@@ -126,7 +126,11 @@ class SendReportSummary(Task):
         ]
 
         for user_id in user_ids:
-            report_data = team_report['reports'][user_id]
+            report_data = team_report['reports'].get(user_id)
+            if not report_data:
+                logging.error('No report for user id: {}'.format(user_id))
+                continue
+
             user_data = bot.get_user_by_id(user_id)
             if not user_data:
                 logging.error('Unable to find user by id: {}'.format(user_id))
