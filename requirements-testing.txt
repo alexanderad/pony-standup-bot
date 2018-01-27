@@ -3,3 +3,4 @@
 nose
 flexmock
 freezegun
+ipdb

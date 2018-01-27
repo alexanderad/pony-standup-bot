@@ -1,24 +1,21 @@
 # coding=utf-8
+import os
 import time
 import logging
-import collections
-
-from rtmbot.core import Plugin
+import logging.handlers
 
 import tasks
-from .jobs import WorldTick
+from .bot import Bot
 from .storage import Storage
 
 
-class StandupPonyPlugin(Plugin):
-    """Standup Pony plugin."""
-    def __init__(self, name=None, slack_client=None, plugin_config=None):
-        super(StandupPonyPlugin, self).__init__(
-            name, slack_client, plugin_config)
-        self.slow_queue = collections.deque()
-        self.fast_queue = collections.deque()
+class Pony(Bot):
 
-        self.storage = Storage(plugin_config.get('db_file'))
+    def __init__(self, config):
+        super(Pony, self).__init__(config)
+
+        db_file = os.path.join(self.work_dir, self.config['pony']['db_file'])
+        self.storage = Storage(db_file)
 
         # world updates
         self.slow_queue.append(tasks.UpdateUserList())
@@ -30,7 +27,7 @@ class StandupPonyPlugin(Plugin):
         channels = self.storage.get('channels', dict())
 
         if channel_id not in channels:
-            channels[channel_id] = self.slack_client.api_call()
+            channels[channel_id] = self.slack.api_call()
             self.storage.set('channels', channels)
 
         return channels[channel_id]
@@ -57,7 +54,7 @@ class StandupPonyPlugin(Plugin):
 
     def send_typing(self, to, over_time=1.25):
         time.sleep(over_time * 0.25)
-        self.slack_client.server.send_to_websocket(
+        self.slack.server.send_to_websocket(
             dict(type='typing', channel=to))
         time.sleep(over_time * 0.75)
 
@@ -79,24 +76,3 @@ class StandupPonyPlugin(Plugin):
     def process_presence_change(self, data):
         self.fast_queue.append(tasks.ProcessPresenceChange(
             data.get('user'), data.get('presence')))
-
-    def register_jobs(self):
-        # slow queue, some minutes between runs (slow world queue)
-        self.jobs.append(
-            WorldTick(
-                bot=self,
-                queue=self.slow_queue,
-                interval=2 * 60
-            )
-        )
-        logging.info('Registered slow queue')
-
-        # fast queue, super small delay before tasks flushed (fast world queue)
-        self.jobs.append(
-            WorldTick(
-                bot=self,
-                queue=self.fast_queue,
-                interval=0.5
-            )
-        )
-        logging.info('Registered fast queue')

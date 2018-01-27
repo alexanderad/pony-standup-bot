@@ -1,5 +1,4 @@
 # coding=utf-8
-import logging
 import calendar
 import dateutil.tz
 import dateutil.parser
@@ -12,7 +11,7 @@ from .dictionary import Dictionary
 
 class Task(object):
     """Single task."""
-    def execute(self, bot, slack):
+    def execute(self, bot):
         pass
 
 
@@ -30,14 +29,14 @@ class SendMessage(Task):
 
         return to
 
-    def execute(self, bot, slack):
+    def execute(self, bot):
         im_channel = self.get_im_channel(bot, self.to)
 
-        logging.info(u'Sending message "{}" to {} (typing event to {})'.format(
+        bot.log.info(u'Sending message "{}" to {} (typing event to {})'.format(
             self.text, self.to, im_channel))
 
         bot.send_typing(to=im_channel)
-        slack.api_call(
+        bot.slack.api_call(
             'chat.postMessage',
             channel=self.to,
             text=self.text,
@@ -48,23 +47,24 @@ class SendMessage(Task):
 
 class UpdateUserList(Task):
     """Updates team user list."""
-    def execute(self, bot, slack):
-        logging.info('Updating user list')
-        user_list = slack.api_call('users.list', presence=1)
+    def execute(self, bot):
+        bot.log.info('Updating user list')
+        user_list = bot.slack.api_call('users.list', presence=1)
         users = [
             user for user in user_list['members']
             if not user['deleted']
         ]
 
         bot.storage.set('users', users)
+        bot.slow_queue.append(UpdateUserList())
 
 
 class UpdateIMList(Task):
     """Updates current IM list."""
-    def execute(self, bot, slack):
-        logging.info('Updating IM list')
+    def execute(self, bot):
+        bot.log.info('Updating IM list')
         ims = [
-            im for im in slack.api_call('im.list')['ims']
+            im for im in bot.slack.api_call('im.list')['ims']
             if im['is_im'] and not im['is_user_deleted']
         ]
 
@@ -73,7 +73,7 @@ class UpdateIMList(Task):
 
 class SyncDB(Task):
     """Syncs in-memory database to file."""
-    def execute(self, bot, slack):
+    def execute(self, bot):
         bot.storage.save()
         bot.slow_queue.append(SyncDB())
 
@@ -93,24 +93,24 @@ class SendReportSummary(Task):
             if user['id'] == user_id:
                 return user['profile']['image_192']
 
-    def execute(self, bot, slack):
+    def execute(self, bot):
         report = bot.storage.get('report')
         today = datetime.utcnow().date()
-        logging.info('Building report summary for {}'.format(self.team))
+        bot.log.info('Building report summary for {}'.format(self.team))
 
         if today not in report:
-            logging.debug('Nothing to report for today')
+            bot.log.debug('Nothing to report for today')
             return
 
-        team_config = bot.plugin_config[self.team]
+        team_config = bot.config[self.team]
 
         team_report = report[today].get(self.team)
         if team_report is None:
-            logging.debug('Nothing to report for this team')
+            bot.log.debug('Nothing to report for this team')
             return
 
         if team_report.get('reported_at') is not None:
-            logging.debug('Already reported today')
+            bot.log.debug('Already reported today')
             return
 
         reports, offline_users, no_response_users = [], [], []
@@ -128,12 +128,12 @@ class SendReportSummary(Task):
         for user_id in user_ids:
             report_data = team_report['reports'].get(user_id)
             if not report_data:
-                logging.error('No report for user id: {}'.format(user_id))
+                bot.log.error('No report for user id: {}'.format(user_id))
                 continue
 
             user_data = bot.get_user_by_id(user_id)
             if not user_data:
-                logging.error('Unable to find user by id: {}'.format(user_id))
+                bot.log.error('Unable to find user by id: {}'.format(user_id))
                 continue
 
             full_name = user_data['profile'].get('real_name')
@@ -150,7 +150,7 @@ class SendReportSummary(Task):
             user_report = {
                 'color': color,
                 'title': full_name,
-                'thumb_url': self.get_user_avatar(slack, user_id),
+                'thumb_url': self.get_user_avatar(bot.slack, user_id),
                 'ts': calendar.timegm(report_data['reported_at'].timetuple()),
                 'text': u'\n'.join(report_data['report'])[:1024]
             }
@@ -187,7 +187,7 @@ class SendReportSummary(Task):
 
             team_report['reported_at'] = datetime.utcnow()
 
-            logging.info('Reported status for {}'.format(self.team))
+            bot.log.info('Reported status for {}'.format(self.team))
 
 
 class CheckReports(Task):
@@ -196,7 +196,7 @@ class CheckReports(Task):
         return today.isoweekday() in (6, 7)
 
     def is_holiday(self, bot, today):
-        return today in bot.plugin_config.get('holidays', {})
+        return today in bot.config.get('holidays', {})
 
     def is_reportable(self, bot, today):
         is_weekend = self.is_weekend(today)
@@ -204,15 +204,15 @@ class CheckReports(Task):
         return not is_weekend and not is_holiday
 
     def is_time_to_send_summary(self, bot, report_by):
-        tz = dateutil.tz.gettz(bot.plugin_config['timezone'])
+        tz = dateutil.tz.gettz(bot.config['pony']['timezone'])
         report_by = dateutil.parser.parse(report_by).replace(tzinfo=tz)
         now = datetime.now(dateutil.tz.tzlocal())
         return now >= report_by
 
     def is_last_call(self, bot, report_by):
-        tz = dateutil.tz.gettz(bot.plugin_config['timezone'])
+        tz = dateutil.tz.gettz(bot.config['pony']['timezone'])
         report_by = dateutil.parser.parse(report_by).replace(tzinfo=tz)
-        last_call = dateutil.parser.parse(bot.plugin_config['last_call'])
+        last_call = dateutil.parser.parse(bot.config['pony']['last_call'])
         last_call = timedelta(hours=last_call.hour, minutes=last_call.minute)
         if not last_call:
             return
@@ -221,7 +221,7 @@ class CheckReports(Task):
         return report_by - now < last_call
 
     def is_too_early_to_ask(self, bot, ask_earliest):
-        tz = dateutil.tz.gettz(bot.plugin_config['timezone'])
+        tz = dateutil.tz.gettz(bot.config['pony']['timezone'])
         ask_earliest = dateutil.parser.parse(ask_earliest).replace(tzinfo=tz)
         now = datetime.now(dateutil.tz.tzlocal())
         return now < ask_earliest
@@ -236,7 +236,7 @@ class CheckReports(Task):
 
             user_data = bot.get_user_by_name(user)
             if not user_data:
-                logging.error('Unable to find user by name {}'.format(user))
+                bot.log.error('Unable to find user by name {}'.format(user))
                 continue
 
             team_report['reports'][user_data['id']] = {
@@ -246,7 +246,7 @@ class CheckReports(Task):
 
         return team_report
 
-    def execute(self, bot, slack):
+    def execute(self, bot):
         # schedule next check
         bot.slow_queue.append(CheckReports())
 
@@ -254,18 +254,18 @@ class CheckReports(Task):
 
         report = bot.storage.get('report', {})
         if today not in report:
-            UpdateUserList().execute(bot, slack)
+            UpdateUserList().execute(bot)
 
-            logging.info('Initializing empty report for {}'.format(today))
+            bot.log.info('Initializing empty report for {}'.format(today))
             report[today] = dict()
 
         # ensure report entries exist for current day and all the teams
-        teams = bot.plugin_config['active_teams']
+        teams = bot.config['active_teams']
         for team in teams:
-            team_config = bot.plugin_config[team]
+            team_config = bot.config[team]
 
             if team not in report[today]:
-                logging.info(
+                bot.log.info(
                     'Initializing empty report for {} {}'.format(
                         team, today))
                 report[today][team] = self.init_empty_report(bot, team_config)
@@ -276,16 +276,16 @@ class CheckReports(Task):
                 teams_by_user[user_id].append(team)
 
         for team in teams:
-            team_config = bot.plugin_config[team]
+            team_config = bot.config[team]
             team_report = report[today][team]
 
             if team_report.get('reported_at'):
-                logging.debug('Team {} already reported'.format(team))
+                bot.log.debug('Team {} already reported'.format(team))
                 continue
 
             is_reportable = self.is_reportable(bot, today)
             if not is_reportable:
-                logging.debug('Today is not reportable (weekend or holiday)')
+                bot.log.debug('Today is not reportable (weekend or holiday)')
 
                 report_holiday = (
                     self.is_holiday(bot, today) and
@@ -295,7 +295,7 @@ class CheckReports(Task):
                 )
                 if report_holiday:
                     team_report['reported_at'] = datetime.utcnow()
-                    holiday = bot.plugin_config.get('holidays', []).get(today)
+                    holiday = bot.config.get('holidays', []).get(today)
                     bot.fast_queue.append(
                         SendMessage(
                             to=team_config['post_summary_to'],
@@ -308,11 +308,11 @@ class CheckReports(Task):
                 continue
 
             if self.is_too_early_to_ask(bot, team_config['ask_earliest']):
-                logging.debug('Too early to ask people on {}'.format(team))
+                bot.log.debug('Too early to ask people on {}'.format(team))
                 continue
 
             if self.is_time_to_send_summary(bot, team_config['report_by']):
-                logging.debug('It is time to send summary for {}'.format(team))
+                bot.log.debug('It is time to send summary for {}'.format(team))
                 bot.fast_queue.append(SendReportSummary(team))
                 continue
 
@@ -321,7 +321,7 @@ class CheckReports(Task):
                 and team_report.get('last_call_at') is None
             )
             if last_call:
-                logging.debug('Sending last call for {}'.format(team))
+                bot.log.debug('Sending last call for {}'.format(team))
                 team_report['last_call_at'] = datetime.utcnow()
 
             for user_id in team_report['reports'].keys():
@@ -344,12 +344,12 @@ class AskStatus(Task):
         self.user_id = user_id
         self.last_call = last_call
 
-    def execute(self, bot, slack):
+    def execute(self, bot):
         current_lock = bot.get_user_lock(self.user_id)
 
         skip_user = current_lock and not self.last_call
         if skip_user:
-            logging.debug(
+            bot.log.debug(
                 'User {} is already locked for {}, will wait for them to '
                 'respond'.format(self.user_id, current_lock))
             return
@@ -360,7 +360,7 @@ class AskStatus(Task):
             for team in self.teams:
                 report[team]['reports'][self.user_id]['seen_online'] = True
         else:
-            logging.debug(
+            bot.log.debug(
                 'User {} is not online, will try later'.format(self.user_id))
             return
 
@@ -371,7 +371,7 @@ class AskStatus(Task):
         ).total_seconds()
         bot.lock_user(self.user_id, self.teams, expire_in)
 
-        logging.info('Asking user {} their status for {}'.format(
+        bot.log.info('Asking user {} their status for {}'.format(
             self.user_id, self.teams))
 
         phrase = Dictionary.pick(
@@ -420,8 +420,8 @@ class ReadMessage(Task):
     def is_message_edit(self):
         return self.data.get('subtype', None) == 'message_changed'
 
-    def execute(self, bot, slack):
-        logging.debug(u'Message event "{}"'.format(self.data))
+    def execute(self, bot):
+        bot.log.debug(u'Message event "{}"'.format(self.data))
 
         if self.is_hidden_message():
             if self.is_message_edit():
@@ -441,7 +441,7 @@ class ReadMessage(Task):
 
 class ReadMessageEdit(ReadMessage):
     """Reads a message edit."""
-    def execute(self, bot, slack):
+    def execute(self, bot):
         new_message = self.data['message']
         previous_message = self.data['previous_message']
         user_id = new_message['user']
@@ -449,7 +449,7 @@ class ReadMessageEdit(ReadMessage):
         # see if we have previous message as report and propagate the edit
         today = datetime.utcnow().date()
         report = bot.storage.get('report')
-        teams = bot.plugin_config['active_teams']
+        teams = bot.config['active_teams']
 
         for team in teams:
             # assume everything: report does not exist, team has not yet
@@ -463,19 +463,19 @@ class ReadMessageEdit(ReadMessage):
                 msg_idx = user_report['report'].index(previous_message['text'])
                 user_report['report'][msg_idx] = new_message['text']
                 user_report['edited_at'] = datetime.utcnow()
-                logging.info('Applied message edit for {} on {}'.format(
+                bot.log.info('Applied message edit for {} on {}'.format(
                     user_id, team))
 
 
 class ReadStatusMessage(ReadMessage):
     """Reads a status report from a user."""
-    def execute(self, bot, slack):
+    def execute(self, bot):
         user_id = self.data['user']
 
         # check if there are any active context for this user
         teams = bot.get_user_lock(user_id)
         if teams is None:
-            logging.debug(
+            bot.log.debug(
                 'User {} is not known to have any active context'.format(
                     user_id
                 )
@@ -514,7 +514,7 @@ class ProcessPresenceChange(Task):
         self.user_id = user_id
         self.presence = presence
 
-    def execute(self, bot, slack):
+    def execute(self, bot):
         user = bot.get_user_by_id(self.user_id)
         if user is not None:
             user['presence'] = self.presence
