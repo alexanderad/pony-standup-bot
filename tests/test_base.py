@@ -1,17 +1,15 @@
 from __future__ import absolute_import
 
 import unittest
-from flexmock import flexmock
 
-from pony.pony import StandupPonyPlugin
+from pony.pony import Pony
 
 
 class BaseTest(unittest.TestCase):
     def setUp(self):
-        self.bot = StandupPonyPlugin(
-            plugin_config={
-                'db_file': ''
-            },
-            slack_client=flexmock(server=flexmock())
+        self.config = dict(
+            pony=dict(
+                db_file='test.db'
+            )
         )
-        self.slack = flexmock()
+        self.bot = Pony(config=self.config)

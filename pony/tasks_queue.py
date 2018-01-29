@@ -20,16 +20,20 @@ class TasksQueue(object):
     def append(self, task):
         self._queue.append(task)
 
+    @property
+    def size(self):
+        return len(self._queue)
+
     def process(self):
         if not self._is_time_to_run():
-            return
+            return 0
 
         visible_tasks = len(self._queue)
 
         for x in range(visible_tasks):
             task = self._queue.popleft()
             try:
-                task.execute(bot=self._bot)
+                task.execute(self._bot)
             except Exception as e:
                 self._bot.log.error(
                     'Error processing task {}\n{}'.format(task, e))
@@ -38,3 +42,4 @@ class TasksQueue(object):
                     raise
 
         self._last_run_at = time.time()
+        return visible_tasks

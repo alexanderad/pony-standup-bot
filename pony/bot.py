@@ -86,7 +86,7 @@ class Bot(object):
         self.log.info('Successfully connected: {}'.format(data))
 
     def process_pong(self, data):
-        self.log.debug('Received pong: {}'.format(data))
+        self.log.debug('Received pong message: {}'.format(data))
 
     def process_goodbye(self, data):
         self.log.info('Received goodbye message: {}'.format(data))
