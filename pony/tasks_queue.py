@@ -20,6 +20,12 @@ class TasksQueue(object):
     def append(self, task):
         self._queue.append(task)
 
+    def pop(self):
+        return self._queue.pop()
+
+    def popleft(self):
+        return self._queue.popleft()
+
     @property
     def size(self):
         return len(self._queue)

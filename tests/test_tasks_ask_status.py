@@ -13,7 +13,6 @@ from tests.test_base import BaseTest
 class AskStatusTest(BaseTest):
     def setUp(self):
         super(AskStatusTest, self).setUp()
-        self.bot.plugin_config = {}
         self.bot.storage.set('report', {
             date.today(): {
                 't1': {
@@ -41,7 +40,7 @@ class AskStatusTest(BaseTest):
     def test_execute_user_already_locked(self):
         self.bot.lock_user('U023BECGF', ['t1', 't2'], 10)
         task = pony.tasks.AskStatus(['t1', 't2'], 'U023BECGF', last_call=False)
-        task.execute(self.bot, self.slack)
+        task.execute(self.bot)
 
         with self.assertRaises(IndexError):
             self.bot.fast_queue.pop()
@@ -53,30 +52,30 @@ class AskStatusTest(BaseTest):
          .and_return(False))
 
         task = pony.tasks.AskStatus(['t1', 't2'], 'U023BECGF', last_call=False)
-        task.execute(self.bot, self.slack)
+        task.execute(self.bot)
 
         with self.assertRaises(IndexError):
             self.bot.fast_queue.pop()
 
     def test_execute_sets_user_lock(self):
         task = pony.tasks.AskStatus(['t1', 't2'], 'U023BECGF', last_call=False)
-        task.execute(self.bot, self.slack)
+        task.execute(self.bot)
 
         self.assertListEqual(self.bot.get_user_lock('U023BECGF'), ['t1', 't2'])
 
     def test_execute_lock_does_blocks_duplicate_inquiries(self):
         task = pony.tasks.AskStatus(['t1', 't2'], 'U023BECGF', last_call=False)
-        task.execute(self.bot, self.slack)
-        task.execute(self.bot, self.slack)
-        task.execute(self.bot, self.slack)
+        task.execute(self.bot)
+        task.execute(self.bot)
+        task.execute(self.bot)
 
-        self.assertEqual(len(self.bot.fast_queue), 1)
+        self.assertEqual(self.bot.fast_queue.size, 1)
         task = self.bot.fast_queue.pop()
         self.assertIsInstance(task, pony.tasks.SendMessage)
 
     def test_execute(self):
         task = pony.tasks.AskStatus(['t1', 't2'], 'U023BECGF', last_call=False)
-        task.execute(self.bot, self.slack)
+        task.execute(self.bot)
 
         task = self.bot.fast_queue.pop()
         self.assertIsInstance(task, pony.tasks.SendMessage)
@@ -85,7 +84,7 @@ class AskStatusTest(BaseTest):
 
     def test_execute_last_call(self):
         task = pony.tasks.AskStatus(['t1', 't2'], 'U023BECGF', last_call=True)
-        task.execute(self.bot, self.slack)
+        task.execute(self.bot)
 
         task = self.bot.fast_queue.pop()
         self.assertIsInstance(task, pony.tasks.SendMessage)

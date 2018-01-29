@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 
-import pony.tasks
 from tests.test_base import BaseTest
 
 

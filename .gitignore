@@ -37,26 +37,24 @@ htmlcov/
 nosetests.xml
 coverage.xml
 *,cover
-.hypothesis/
 
 # Translations
 *.mo
 *.pot
 
 # logs
-.log
-
-# dotenv
-.env
+*.log
 
 # virtualenv
 .venv/
 venv/
 ENV/
+.env
 
 # also
-pony.db
+*.db
 pony.yaml
-pony.log
+
+# editors
 .idea
 .vscode
