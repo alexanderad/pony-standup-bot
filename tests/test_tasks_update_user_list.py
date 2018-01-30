@@ -20,7 +20,7 @@ class UpdateUserListTest(BaseTest):
             ]
         )))
 
-        task.execute(self.bot, self.slack)
+        task.execute(self.bot)
         self.assertEqual(
             self.bot.storage.get('users'),
             [{'id': '_id1', 'deleted': False}]

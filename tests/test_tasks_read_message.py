@@ -39,11 +39,11 @@ class ReadMessageTest(BaseTest):
 
     def test_execute_empty_payload(self):
         task = pony.tasks.ReadMessage({})
-        self.assertIsNone(task.execute(self.bot, self.slack))
+        self.assertIsNone(task.execute(self.bot))
 
     def test_execute_skips_bot_messages(self):
         task = pony.tasks.ReadMessage({'bot_id': '_bot_id'})
-        self.assertIsNone(task.execute(self.bot, self.slack))
+        self.assertIsNone(task.execute(self.bot))
 
     def test_execute_reads_status_message(self):
         self.bot.storage.set('ims', [{'id': '_im_channel_id'}])
@@ -56,7 +56,7 @@ class ReadMessageTest(BaseTest):
 
         task = pony.tasks.ReadMessage(data)
 
-        self.assertIsNone(task.execute(self.bot, self.slack))
+        self.assertIsNone(task.execute(self.bot))
 
         read_message_task = self.bot.fast_queue.pop()
         self.assertIsInstance(read_message_task, pony.tasks.ReadStatusMessage)
@@ -66,9 +66,9 @@ class ReadMessageTest(BaseTest):
 class ReadMessageEditTest(BaseTest):
     def setUp(self):
         super(ReadMessageEditTest, self).setUp()
-        self.bot.plugin_config = {
+        self.bot.config.update({
             'active_teams': ['dev_team1', 'dev_team2'],
-        }
+        })
         self.bot.storage.set('report', {})
         self.data = {
             'event_ts': '1484475451.173471',
@@ -95,7 +95,7 @@ class ReadMessageEditTest(BaseTest):
 
     def test_execute_empty_report_or_no_user(self):
         task = pony.tasks.ReadMessageEdit(self.data)
-        task.execute(self.bot, self.slack)
+        task.execute(self.bot)
 
     def test_execute_single_team_user(self):
         today = datetime.utcnow().date()
@@ -115,7 +115,7 @@ class ReadMessageEditTest(BaseTest):
         })
 
         task = pony.tasks.ReadMessageEdit(self.data)
-        task.execute(self.bot, self.slack)
+        task.execute(self.bot)
 
         report = self.bot.storage.get('report')[today]['dev_team1']['reports']
         self.assertIsNotNone(report['U04RVVBAY']['edited_at'])
@@ -155,7 +155,7 @@ class ReadMessageEditTest(BaseTest):
         })
 
         task = pony.tasks.ReadMessageEdit(self.data)
-        task.execute(self.bot, self.slack)
+        task.execute(self.bot)
 
         report1 = self.bot.storage.get('report')[today]['dev_team1']['reports']
         self.assertIsNotNone(report1['U04RVVBAY']['edited_at'])

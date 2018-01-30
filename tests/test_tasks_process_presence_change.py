@@ -11,7 +11,7 @@ class ProcessPresenceChangeTest(BaseTest):
 
     def test_execute_user_is_now_active(self):
         task = pony.tasks.ProcessPresenceChange('_id1', presence='active')
-        task.execute(self.bot, self.slack)
+        task.execute(self.bot)
 
         user = self.bot.get_user_by_id('_id1')
         self.assertEqual(user.get('presence'), 'active')
@@ -20,15 +20,15 @@ class ProcessPresenceChangeTest(BaseTest):
         self.assertFalse(self.bot.user_is_online('_id1'))
 
         task = pony.tasks.ProcessPresenceChange('_id1', presence='active')
-        task.execute(self.bot, self.slack)
+        task.execute(self.bot)
 
         self.assertTrue(self.bot.user_is_online('_id1'))
 
     def test_execute_is_away(self):
         task = pony.tasks.ProcessPresenceChange('_id1', presence='active')
-        task.execute(self.bot, self.slack)
+        task.execute(self.bot)
         self.assertTrue(self.bot.user_is_online('_id1'))
 
         task = pony.tasks.ProcessPresenceChange('_id1', presence='away')
-        task.execute(self.bot, self.slack)
+        task.execute(self.bot)
         self.assertFalse(self.bot.user_is_online('_id1'))

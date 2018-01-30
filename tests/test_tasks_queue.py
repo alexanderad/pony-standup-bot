@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 
-import unittest
 from flexmock import flexmock
 from freezegun import freeze_time
 

@@ -14,5 +14,5 @@ class SyncDBTest(BaseTest):
          .should_receive('save')
          .once())
 
-        task.execute(self.bot, self.slack)
+        task.execute(self.bot)
         self.assertIsInstance(self.bot.slow_queue.pop(), pony.tasks.SyncDB)

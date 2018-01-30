@@ -21,7 +21,7 @@ class UpdateIMListTest(BaseTest):
             ]
         )))
 
-        task.execute(self.bot, self.slack)
+        task.execute(self.bot)
         self.assertEqual(
             self.bot.storage.get('ims'),
             [{'id': '_id1', 'is_im': True, 'is_user_deleted': False}]

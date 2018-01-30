@@ -11,7 +11,7 @@ class SendMessageTest(BaseTest):
     def test_execute(self):
         task = pony.tasks.SendMessage('_to', '_text', [1, 2, 3])
 
-        (flexmock(self.bot.slack_client.server)
+        (flexmock(self.bot.slack.server)
          .should_receive('send_to_websocket')
          .with_args(dict(type='typing', channel='_to')))
 
@@ -20,7 +20,7 @@ class SendMessageTest(BaseTest):
          .should_receive('sleep')
          .times(2))
 
-        (flexmock(self.slack)
+        (flexmock(self.bot.slack)
          .should_receive('api_call')
          .with_args(
             'chat.postMessage',
@@ -30,4 +30,4 @@ class SendMessageTest(BaseTest):
             as_user=True
         ))
 
-        task.execute(self.bot, self.slack)
+        task.execute(self.bot)

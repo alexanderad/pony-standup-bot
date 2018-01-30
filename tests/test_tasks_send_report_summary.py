@@ -12,12 +12,12 @@ class SendReportSummaryTest(BaseTest):
     def setUp(self):
         super(SendReportSummaryTest, self).setUp()
         self.bot.storage.set('report', {})
-        self.bot.plugin_config = {
+        self.bot.config.update({
             '_dummy_team': {
                 'post_summary_to': '#dummy-channel',
                 'name': 'Dummy Team'
             }
-        }
+        })
 
         (flexmock(self.bot)
          .should_receive('get_user_by_id')
@@ -42,16 +42,16 @@ class SendReportSummaryTest(BaseTest):
         }))
 
     def test_get_user_avatar_is_failsafe(self):
-        (flexmock(self.slack)
+        (flexmock(self.bot.slack)
          .should_receive('api_call')
          .with_args('users.list')
          .and_return(dict(members=[])))
 
         task = pony.tasks.SendReportSummary('_dummy_team')
-        self.assertIsNone(task.get_user_avatar(self.slack, '_user_id'))
+        self.assertIsNone(task.get_user_avatar(self.bot.slack, '_user_id'))
 
     def test_get_user_avatar(self):
-        (flexmock(self.slack)
+        (flexmock(self.bot.slack)
          .should_receive('api_call')
          .with_args('users.list')
          .and_return({
@@ -65,25 +65,25 @@ class SendReportSummaryTest(BaseTest):
 
         task = pony.tasks.SendReportSummary('_dummy_team')
         self.assertEqual(
-            task.get_user_avatar(self.slack, '_user_id'), '_image_192_url')
+            task.get_user_avatar(self.bot.slack, '_user_id'), '_image_192_url')
 
     def test_get_user_avatar_lazy_loads_profiles(self):
-        (flexmock(self.slack)
+        (flexmock(self.bot.slack)
          .should_receive('api_call')
          .with_args('users.list')
          .and_return(dict(members=[]))
          .times(1))
 
         task = pony.tasks.SendReportSummary('_dummy_team')
-        self.assertIsNone(task.get_user_avatar(self.slack, '_user_id'))
-        self.assertIsNone(task.get_user_avatar(self.slack, '_user_id'))
-        self.assertIsNone(task.get_user_avatar(self.slack, '_user_id'))
+        self.assertIsNone(task.get_user_avatar(self.bot.slack, '_user_id'))
+        self.assertIsNone(task.get_user_avatar(self.bot.slack, '_user_id'))
+        self.assertIsNone(task.get_user_avatar(self.bot.slack, '_user_id'))
 
     def test_execute_no_reports(self):
         self.bot.storage.set('report', {})
 
         task = pony.tasks.SendReportSummary('_dummy_team')
-        self.assertIsNone(task.execute(self.bot, self.slack))
+        self.assertIsNone(task.execute(self.bot))
 
     def test_execute_no_report_for_this_team(self):
         self.bot.storage.set('report', {
@@ -91,7 +91,7 @@ class SendReportSummaryTest(BaseTest):
         })
 
         task = pony.tasks.SendReportSummary('_dummy_team')
-        self.assertIsNone(task.execute(self.bot, self.slack))
+        self.assertIsNone(task.execute(self.bot))
 
     def test_execute_report_already_sent(self):
         self.bot.storage.set('report', {
@@ -103,11 +103,11 @@ class SendReportSummaryTest(BaseTest):
         })
 
         task = pony.tasks.SendReportSummary('_dummy_team')
-        self.assertIsNone(task.execute(self.bot, self.slack))
-        self.assertEqual(len(self.bot.fast_queue), 0)
+        self.assertIsNone(task.execute(self.bot))
+        self.assertEqual(self.bot.fast_queue.size, 0)
 
     def test_execute_user_not_seen_online(self):
-        self.bot.plugin_config['_dummy_team']['users'] = ['@user']
+        self.bot.config['_dummy_team']['users'] = ['@user']
         self.bot.storage.set('report', {
             datetime.utcnow().date(): {
                 '_dummy_team': {
@@ -121,7 +121,7 @@ class SendReportSummaryTest(BaseTest):
         })
 
         task = pony.tasks.SendReportSummary('_dummy_team')
-        self.assertIsNone(task.execute(self.bot, self.slack))
+        self.assertIsNone(task.execute(self.bot))
 
         report = self.bot.fast_queue.pop()
         self.assertIsInstance(report, pony.tasks.SendMessage)
@@ -133,7 +133,7 @@ class SendReportSummaryTest(BaseTest):
         )
 
     def test_execute_user_returned_no_response(self):
-        self.bot.plugin_config['_dummy_team']['users'] = ['@user']
+        self.bot.config['_dummy_team']['users'] = ['@user']
         self.bot.storage.set('report', {
             datetime.utcnow().date(): {
                 '_dummy_team': {
@@ -147,7 +147,7 @@ class SendReportSummaryTest(BaseTest):
         })
 
         task = pony.tasks.SendReportSummary('_dummy_team')
-        self.assertIsNone(task.execute(self.bot, self.slack))
+        self.assertIsNone(task.execute(self.bot))
 
         report = self.bot.fast_queue.pop()
         self.assertIsInstance(report, pony.tasks.SendMessage)
@@ -159,7 +159,7 @@ class SendReportSummaryTest(BaseTest):
         )
 
     def test_execute(self):
-        self.bot.plugin_config['_dummy_team']['users'] = ['@user']
+        self.bot.config['_dummy_team']['users'] = ['@user']
         self.bot.storage.set('report', {
             datetime.utcnow().date(): {
                 '_dummy_team': {
@@ -181,10 +181,10 @@ class SendReportSummaryTest(BaseTest):
 
         (flexmock(task)
          .should_receive('get_user_avatar')
-         .with_args(self.slack, '_user_id')
+         .with_args(self.bot.slack, '_user_id')
          .and_return('_dummy_user_avatar_url'))
 
-        self.assertIsNone(task.execute(self.bot, self.slack))
+        self.assertIsNone(task.execute(self.bot))
 
         report = self.bot.fast_queue.pop()
         self.assertIsInstance(report, pony.tasks.SendMessage)
@@ -198,7 +198,7 @@ class SendReportSummaryTest(BaseTest):
         self.assertIsNotNone(report_line['ts'])
 
     def test_execute_when_user_has_department_assigned(self):
-        self.bot.plugin_config['_dummy_team']['users'] = ['@user']
+        self.bot.config['_dummy_team']['users'] = ['@user']
         self.bot.storage.set('report', {
             datetime.utcnow().date(): {
                 '_dummy_team': {
@@ -221,10 +221,10 @@ class SendReportSummaryTest(BaseTest):
 
         (flexmock(task)
          .should_receive('get_user_avatar')
-         .with_args(self.slack, '_user_id')
+         .with_args(self.bot.slack, '_user_id')
          .and_return('_dummy_user_avatar_url'))
 
-        self.assertIsNone(task.execute(self.bot, self.slack))
+        self.assertIsNone(task.execute(self.bot))
 
         report = self.bot.fast_queue.pop()
 

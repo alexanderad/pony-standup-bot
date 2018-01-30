@@ -13,12 +13,7 @@ class CheckReportsTest(BaseTest):
     def setUp(self):
         super(CheckReportsTest, self).setUp()
         self.task = pony.tasks.CheckReports()
-        self.bot.plugin_config = {
-            'timezone': 'UTC',
-            'holidays': {
-                date(2016, 12, 1): 'Romanian National Day'
-            },
-            'last_call': '5 minutes',
+        self.bot.config.update({
             'active_teams': ['dev_team1'],
             'dev_team1': {
                 'name': 'Dev Team 1',
@@ -29,7 +24,7 @@ class CheckReportsTest(BaseTest):
                     '@sasha'
                 ]
             }
-        }
+        })
         (flexmock(self.bot)
          .should_receive('get_user_by_name')
          .with_args('@sasha')
@@ -37,7 +32,7 @@ class CheckReportsTest(BaseTest):
 
         # check reports might call the UserList update
         # but we are not interested in that in scope of this test
-        (flexmock(self.slack)
+        (flexmock(self.bot.slack)
          .should_receive('api_call')
          .with_args('users.list', presence=1)
          .and_return({'members': []}))
@@ -53,11 +48,11 @@ class CheckReportsTest(BaseTest):
         self.assertFalse(self.task.is_weekend(monday))
 
     def test_is_holiday(self):
-        self.bot.plugin_config = {
+        self.bot.config.update({
             'holidays': {
                 date(2016, 12, 25): 'Christmas'
             }
-        }
+        })
 
         christmas = date(2016, 12, 25)
         self.assertTrue(self.task.is_holiday(self.bot, christmas))
@@ -66,11 +61,11 @@ class CheckReportsTest(BaseTest):
         self.assertFalse(self.task.is_holiday(self.bot, day_before_christmas))
 
     def test_is_reportable(self):
-        self.bot.plugin_config = {
+        self.bot.config.update({
             'holidays': {
                 date(2016, 12, 25): 'Christmas'
             }
-        }
+        })
 
         christmas = date(2016, 12, 25)
         self.assertFalse(self.task.is_reportable(self.bot, christmas))
@@ -83,7 +78,7 @@ class CheckReportsTest(BaseTest):
 
     def test_init_report(self):
         report = self.task.init_empty_report(
-            self.bot, self.bot.plugin_config['dev_team1'])
+            self.bot, self.bot.config['dev_team1'])
 
         self.assertDictEqual(
             report,
@@ -98,12 +93,12 @@ class CheckReportsTest(BaseTest):
         )
 
     def test_init_report_on_config_with_departments(self):
-        self.bot.plugin_config['dev_team1']['users'] = [
+        self.bot.config['dev_team1']['users'] = [
             {'@sasha': 'Dev Department'}
         ]
 
         report = self.task.init_empty_report(
-            self.bot, self.bot.plugin_config['dev_team1'])
+            self.bot, self.bot.config['dev_team1'])
 
         self.assertDictEqual(
             report,
@@ -119,7 +114,7 @@ class CheckReportsTest(BaseTest):
 
     def test_execute(self):
         with freezegun.freeze_time('2016-12-23 11:00'):
-            self.task.execute(self.bot, self.slack)
+            self.task.execute(self.bot)
 
             task = self.bot.fast_queue.pop()
             self.assertIsInstance(task, pony.tasks.AskStatus)
@@ -128,14 +123,14 @@ class CheckReportsTest(BaseTest):
 
     def test_execute_too_early(self):
         with freezegun.freeze_time('2016-12-23 02:00'):
-            self.task.execute(self.bot, self.slack)
+            self.task.execute(self.bot)
 
             with self.assertRaises(IndexError):
                 self.bot.fast_queue.pop()
 
     def test_execute_too_late(self):
         with freezegun.freeze_time('2016-12-23 20:00'):
-            self.task.execute(self.bot, self.slack)
+            self.task.execute(self.bot)
 
             task = self.bot.fast_queue.pop()
             self.assertIsInstance(task, pony.tasks.SendReportSummary)
@@ -144,7 +139,7 @@ class CheckReportsTest(BaseTest):
     def test_execute_is_not_last_call_yet(self):
         # report by is set to 16.00
         with freezegun.freeze_time('2016-12-23 15:00'):
-            self.task.execute(self.bot, self.slack)
+            self.task.execute(self.bot)
 
             task = self.bot.fast_queue.pop()
             self.assertIsInstance(task, pony.tasks.AskStatus)
@@ -160,7 +155,7 @@ class CheckReportsTest(BaseTest):
     def test_execute_is_last_call(self):
         # report by is set to 16.00, last call is in 5 minutes
         with freezegun.freeze_time('2016-12-23 15:56'):
-            self.task.execute(self.bot, self.slack)
+            self.task.execute(self.bot)
 
             task = self.bot.fast_queue.pop()
             self.assertIsInstance(task, pony.tasks.AskStatus)
@@ -175,7 +170,7 @@ class CheckReportsTest(BaseTest):
 
     def test_execute_report_summary_already_sent(self):
         with freezegun.freeze_time('2016-12-23 11:00'):
-            self.task.execute(self.bot, self.slack)
+            self.task.execute(self.bot)
 
             task = self.bot.fast_queue.pop()
             self.assertIsInstance(task, pony.tasks.AskStatus)
@@ -192,19 +187,19 @@ class CheckReportsTest(BaseTest):
                 }
             })
 
-            self.task.execute(self.bot, self.slack)
+            self.task.execute(self.bot)
             with self.assertRaises(IndexError):
                 self.bot.fast_queue.pop()
 
     def test_execute_day_is_weekend(self):
         with freezegun.freeze_time('2016-12-24 11:00'):
-            self.task.execute(self.bot, self.slack)
+            self.task.execute(self.bot)
             with self.assertRaises(IndexError):
                 self.bot.fast_queue.pop()
 
     def test_execute_day_is_holiday(self):
         with freezegun.freeze_time('2016-12-01 11:00'):
-            self.task.execute(self.bot, self.slack)
+            self.task.execute(self.bot)
 
             task = self.bot.fast_queue.pop()
             self.assertIsInstance(task, pony.tasks.SendMessage)
@@ -213,7 +208,7 @@ class CheckReportsTest(BaseTest):
             self.assertIn('Romanian National Day', task.text)
 
             # this is sent only once (report is marked reported)
-            self.task.execute(self.bot, self.slack)
+            self.task.execute(self.bot)
             with self.assertRaises(IndexError):
                 self.bot.fast_queue.pop()
 
