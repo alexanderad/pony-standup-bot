@@ -10,7 +10,7 @@ class UpdateIMListTest(BaseTest):
     def test_execute(self):
         task = pony.tasks.UpdateIMList()
 
-        (flexmock(self.slack)
+        (flexmock(self.bot.slack)
          .should_receive('api_call')
          .with_args('im.list')
          .and_return(dict(

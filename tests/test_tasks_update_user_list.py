@@ -10,7 +10,7 @@ class UpdateUserListTest(BaseTest):
     def test_execute(self):
         task = pony.tasks.UpdateUserList()
 
-        (flexmock(self.slack)
+        (flexmock(self.bot.slack)
          .should_receive('api_call')
          .with_args('users.list', presence=1)
          .and_return(dict(
