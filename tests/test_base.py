@@ -4,7 +4,7 @@ from datetime import date
 
 import unittest
 
-from pony.pony import Pony
+from pony.bot import Pony
 
 
 class BaseTest(unittest.TestCase):

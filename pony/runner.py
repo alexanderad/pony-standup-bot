@@ -5,7 +5,7 @@ import sys
 
 import yaml
 
-from pony import Pony
+from pony.bot import Pony
 
 
 def parse_args():

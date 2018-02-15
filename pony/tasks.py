@@ -6,17 +6,19 @@ import dateutil.parser
 from datetime import datetime, timedelta
 from collections import defaultdict
 
-from .dictionary import Dictionary
+from pony.dictionary import Dictionary
 
 
 class Task(object):
     """Single task."""
+
     def execute(self, bot):
         pass
 
 
 class SendMessage(Task):
     """Sends a single message to channel or user."""
+
     def __init__(self, to, text, attachments=None):
         self.to = to
         self.text = text
@@ -47,6 +49,7 @@ class SendMessage(Task):
 
 class UpdateUserList(Task):
     """Updates team user list."""
+
     def execute(self, bot):
         bot.log.info('Updating user list')
         user_list = bot.slack.api_call('users.list', presence=1)
@@ -61,6 +64,7 @@ class UpdateUserList(Task):
 
 class UpdateIMList(Task):
     """Updates current IM list."""
+
     def execute(self, bot):
         bot.log.info('Updating IM list')
         ims = [
@@ -73,6 +77,7 @@ class UpdateIMList(Task):
 
 class SyncDB(Task):
     """Syncs in-memory database to file."""
+
     def execute(self, bot):
         bot.storage.save()
         bot.slow_queue.append(SyncDB())
@@ -80,6 +85,7 @@ class SyncDB(Task):
 
 class SendReportSummary(Task):
     """Sends a report summary to team channel."""
+
     def __init__(self, team):
         self.team = team
         self.user_profiles = None
@@ -192,6 +198,7 @@ class SendReportSummary(Task):
 
 class CheckReports(Task):
     """Checks reports statuses."""
+
     def is_weekend(self, today):
         return today.isoweekday() in (6, 7)
 
@@ -339,6 +346,7 @@ class CheckReports(Task):
 
 class AskStatus(Task):
     """Asks a single user their status."""
+
     def __init__(self, teams, user_id, last_call):
         self.teams = teams
         self.user_id = user_id
@@ -394,6 +402,7 @@ class AskStatus(Task):
 
 class ReadMessage(Task):
     """Reads a single message."""
+
     def __init__(self, data):
         self.data = data
 
@@ -441,6 +450,7 @@ class ReadMessage(Task):
 
 class ReadMessageEdit(ReadMessage):
     """Reads a message edit."""
+
     def execute(self, bot):
         new_message = self.data['message']
         previous_message = self.data['previous_message']
@@ -469,6 +479,7 @@ class ReadMessageEdit(ReadMessage):
 
 class ReadStatusMessage(ReadMessage):
     """Reads a status report from a user."""
+
     def execute(self, bot):
         user_id = self.data['user']
 
