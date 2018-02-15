@@ -1,5 +1,11 @@
 # coding=utf-8
-import string
+import six
+
+if six.PY2:
+    from string import letters
+if six.PY3:
+    from string import ascii_letters as letters
+
 from datetime import datetime
 
 
@@ -145,7 +151,7 @@ class Dictionary(object):
     def initial_seed(user_id):
         # Slack IDs look like U023BECGF, U04B1CDVB, U04RVVBAY, etc
         digits = [
-            string.letters.index(x) if not x.isdigit() else int(x)
+            letters.index(x) if not x.isdigit() else int(x)
             for x in user_id
         ]
         return sum(digits)

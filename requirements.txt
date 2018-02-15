@@ -1,3 +1,4 @@
 slackclient==1.1.0
 python-dateutil==2.6.1
 pyyaml==3.12
+six
