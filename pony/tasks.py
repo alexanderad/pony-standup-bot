@@ -237,7 +237,7 @@ class CheckReports(Task):
         team_report = dict(reports={})
         for user_item in team_config['users']:
             if isinstance(user_item, dict):
-                user, department = user_item.items().pop()
+                user, department = list(user_item.items()).pop()
             else:
                 user, department = user_item, None
 

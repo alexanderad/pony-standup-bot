@@ -4,6 +4,7 @@ import os
 import contextlib
 import freezegun
 import tempfile
+import random
 import unittest
 from datetime import datetime, timedelta
 
@@ -16,14 +17,11 @@ class StorageTest(unittest.TestCase):
 
     @contextlib.contextmanager
     def temp_file(self):
-        temp_file = os.path.join(
-            tempfile.gettempdir(),
-            tempfile._RandomNameSequence().next()
-        )
+        f = os.path.join(tempfile.gettempdir(), str(random.random()))
         try:
-            yield temp_file
+            yield f
         finally:
-            os.remove(temp_file)
+            os.remove(f)
 
     def test_set_get(self):
         self.storage.set('_key', '_test_value')
@@ -62,7 +60,7 @@ class StorageTest(unittest.TestCase):
             self.storage.save()
 
             with freezegun.freeze_time(
-                datetime.utcnow() + timedelta(seconds=15)):
+                    datetime.utcnow() + timedelta(seconds=15)):
                 self.storage = pony.storage.Storage(storage_file)
                 self.assertIsNone(self.storage.get('test_key'))
                 self.assertEqual(self.storage.get('test_key_2'), 'test_value')
