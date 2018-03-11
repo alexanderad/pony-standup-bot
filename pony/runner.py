@@ -35,8 +35,9 @@ def main():
     try:
         bot.start()
     except KeyboardInterrupt:
+        bot.log.info('Received keyboard interrupt, exiting now')
+    finally:
         bot.stop_gracefully()
-        sys.exit(0)
 
 
 if __name__ == "__main__":

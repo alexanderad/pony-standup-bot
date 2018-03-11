@@ -8,6 +8,7 @@ from slackclient import SlackClient
 from pony import tasks
 from pony.storage import Storage
 from pony.tasks_queue import TasksQueue
+from pony.models.base import DatabaseConnectionManager
 
 
 class Bot(object):
@@ -109,13 +110,16 @@ class Bot(object):
             time.sleep(0.1)
 
     def stop_gracefully(self):
-        self.log.info('Gracefully stopping now')
+        DatabaseConnectionManager.close()
+        self.log.info('Gracefully stopping')
 
 
 class Pony(Bot):
 
     def __init__(self, config):
         super(Pony, self).__init__(config)
+
+        DatabaseConnectionManager.initialize(self.config['pony'])
 
         db_file = os.path.join(self.work_dir, self.config['pony']['db_file'])
         self.storage = Storage(db_file)
