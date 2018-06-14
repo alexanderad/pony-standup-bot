@@ -16,8 +16,8 @@ class Dictionary(object):
         "to ask other people to. How are you doing today? Give me few words "
         "to share with the team.",
 
-        "Amazing day, dear. I have a questionnaire here. Sponsored by your "
-        "team. How is it going on your side today? Just a few words.",
+        "Amazing day, dear. How is it going on your side today? "
+        "Just a few words.",
 
         "Dear, I'm here to ask you about your status for the team. Could "
         "you be so kind to share few words on what you are working on now?",
@@ -28,22 +28,22 @@ class Dictionary(object):
         "Heya. Just asked all the team members. You are the last one. How's "
         "your day? Anything you want to share with the team?",
 
-        "Good morning, dear. Just noticed you are online, decided to ask you "
+        "Good morning! Just noticed you are online, decided to ask you "
         "your current status for the team. Few words to share?",
 
         "Dear, I apologize for the inconvenience. Would you mind sharing "
         "your status with the team? Few words.",
 
-        "Good morning. Your beloved pony is here again to ask your daily "
+        "Good morning. Your beloved Pony is here again to ask your daily "
         "status for the team. How are you doing today, anything to share?",
 
         "Hello, dear. Pony here. What's your story today? Anything to share "
         "with the team?",
 
-        "Honey, good morning! That's a Standup Pony, your best friend. How "
+        "Good morning! That's a Standup Pony, your best friend. How "
         "are you doing today? Asking for the team.",
 
-        "Bonjorno. Busy day, eh? May I ask you to spend few seconds to tell "
+        "Buongiorno. Busy day, eh? May I ask you to spend few seconds to tell "
         "me your current status? Just a few words to share with the team.",
 
         "Hello there. I'm asking you the same thing each day. Because of the "
@@ -56,7 +56,7 @@ class Dictionary(object):
         "Can't stop being bossy and asking people on the team their daily "
         "status. What do you have to say?",
 
-        "Hi. That's a team check in. How did it go today?",
+        "Hi. That's a team check in. How it is going today?",
     )
     PLEASE_REPORT_LAST_CALL = (
         "This is the final boarding call for developers reporting to daily "
@@ -93,7 +93,7 @@ class Dictionary(object):
         "Thanks a lot. I'm happy about that.",
         "Great, this is on my notes now! :notes:",
         "Thank you, dear! :star2:",
-        "Ok",
+        "Right, noted that!",
         "Thank you, I will report that to your boss.",
         "Many thanks. You :guitar:!",
         "You are so kind. Thanks :+1:",
@@ -101,12 +101,15 @@ class Dictionary(object):
         "Ah, I see. ",
         "You are so hardworking today. Thanks.",
         "Love that. Thanks :+1:",
+        "Nice, I bet Alexandru would give it a :yellow_heart:",
         "Oh nice! Great work you do!",
         "I see. That's intense! Thanks.",
         "Ah, okay. Thanks a lot. <3",
+        "Whoa! :rocket:",
         "Sounds good. Thank you.",
         "Lovely, thanks!",
         "Alright, noted that.",
+        "Wonderful :sparkles: thank you for your report!",
         "That's a lot. I do not envy you. Thanks, anyway! :+1:",
         "Oh, man. Okay, thanks! :+1:",
         "Sounds great! :muscle:",
@@ -116,6 +119,7 @@ class Dictionary(object):
         "Noted that :white_check_mark:",
         "Terrific! (terrific is a new awesome promoted by Woody Allen)",
         "Sounds good. Thanks!",
+        ":sparkling_heart: Nice!",
         "Thank you!",
         ":heavy_check_mark: Gotcha.",
         "Fantastic! :fire:",
@@ -123,18 +127,18 @@ class Dictionary(object):
         "Awesome, thanks! :cake:",
         "Thanks for sharing! :star2:",
         "Love that! <3",
+        "Amazing. What else I can say? Thanks.",
         "Ty!",
         "That's great! :+1:",
         "Nice, let me write that down :pencil:",
         "Fascinating :sparkles:",
-        "Perfect",
+        "I see. Thank you!",
         "Noted that :bow:",
+        "Supercalifragilisticexpialidocious! :dancer: ",
         "Thanks! :tropical_fish:",
         "Nice! :muscle:",
-        "That is :cool:",
         "Great, thanks.",
-        "Is it Friday already? I wish it was Friday. Noted your status, "
-        "thanks anyway.",
+        "Is it Friday already? I wish it was Friday. Noted your status!",
         "OK",
         "Foarte bine!",
         "You are doing great!",
