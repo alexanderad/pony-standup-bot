@@ -57,6 +57,7 @@ class UpdateUserList(Task):
         ]
 
         bot.storage.set('users', users)
+        bot.slow_queue.append(UpdateUserList())
 
 
 class UpdateIMList(Task):
